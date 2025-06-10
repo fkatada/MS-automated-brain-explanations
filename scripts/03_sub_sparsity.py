@@ -88,8 +88,8 @@ amlt_kwargs = {
 submit_utils.run_args_list(
     args_list,
     script_name=script_name,
-    amlt_kwargs=amlt_kwargs,
-    # n_cpus=4,
+    # amlt_kwargs=amlt_kwargs,
+    n_cpus=4,
     # n_cpus=2,
     # gpu_ids=[0, 1, 2, 3],
     # actually_run=False,
