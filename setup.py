@@ -21,8 +21,15 @@ required_pypi = [
     'datasets',  # optional, required for getting NLP datasets
     'pytest',  # optional, required for running tests
 
+    # optional, required for plotting
+    'seaborn', 
+    'dvu',
+
     # for fitting encoding models
     'ridge_utils',
+
+    # for visualizing encoding models
+    'pycortex',
 
     # for sasc
     # 'InstructorEmbedding',  # embeddings for emb_diff_module
