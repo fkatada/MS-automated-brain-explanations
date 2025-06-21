@@ -5,6 +5,8 @@ import cortex
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from matplotlib.colors import ListedColormap
+
 
 MODELS_RENAME = {
     'bert-base-uncased': 'BERT (Finetuned)',
@@ -85,7 +87,10 @@ def quickshow(
     This might look something like `/home/chansingh/mntv1/deep-fMRI/data/ds003020/derivative/pycortex-db/UTS03/anatomicals/`
     """
     if isinstance(cmap, int):
-        cmap = sns.color_palette("husl", cmap, as_cmap=True)
+        # cmap = sns.color_palette("husl", cmap, as_cmap=True)
+        tab10 = plt.get_cmap('tab10')
+        colors = [tab10(i) for i in range(cmap)]
+        cmap = ListedColormap(colors)
 
     if isinstance(X, cortex.VolumeRGB):
         vol = X
