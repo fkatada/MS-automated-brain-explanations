@@ -12,6 +12,82 @@ from tqdm import tqdm
 # sys.path.append('../notebooks')
 # flatmaps_per_question = __import__('06_flatmaps_per_question')
 
+REMAP_CATEGORY_TO_QUESTIONS = {
+    'Visuospatial':  (0, {
+        13: 'Does the sentence describe a visual experience or scene?',
+        18: 'Does the sentence describe a sensory experience?',
+        15: 'Does the sentence involve spatial reasoning?',
+        2: 'Does the sentence describe a physical action?',
+        5: 'Does the sentence involve a description of physical environment or setting?',
+        # questionable
+        4: 'Does the sentence involve the mention of a specific object or item?',
+        35: 'Does the sentence involve a planning or decision-making process?',
+        36: 'Does the sentence involve a discussion about future plans or intentions?',
+        -1: 'Does the sentence contain words with strong visual imagery?',
+    }),
+    'Communication': (1, {
+        3: 'Does the sentence describe a personal or social interaction that leads to a change or revelation?',
+        6: 'Does the sentence describe a relationship between people?',
+        22: 'Does the text describe a mode of communication?',
+        12: 'Does the sentence include dialogue?',
+        32: 'Does the sentence include a direct speech quotation?',
+        -2: 'Does the sentence involve a description of an interpersonal misunderstanding or dispute?',
+    }),
+    'Beliefs, values, emotions': (2, {
+        23: 'Does the input include a comparison or metaphor?',
+        10: "Does the sentence express the narrator's opinion or judgment about an event or character?",
+        16: 'Does the sentence involve an expression of personal values or beliefs?',
+        28: 'Does the sentence involve a discussion about personal or social values?',
+        17: 'Does the sentence contain a negation?',
+        9: 'Is the sentence abstract rather than concrete?',
+        0: 'Does the sentence describe a personal reflection or thought?',
+        33: 'Is the sentence reflective, involving self-analysis or introspection?',
+        -3: 'Does the sentence involve the description of an emotional response?',
+       -4: 'Does the sentence use irony or sarcasm?',
+    }),
+    'Numeric': (3, {
+        8: 'Is time mentioned in the input?',
+        20: 'Does the input contain a number?',
+        30: 'Does the input contain a measurement?',
+    }),
+    'Tactile': (4, {
+        31: 'Does the sentence describe a physical sensation?',
+        34: 'Does the input describe a specific texture or sensation?',
+        25: 'Does the sentence describe a specific sensation or feeling?',  
+    }),
+    'Other': (5, {
+        1: 'Does the sentence contain a proper noun?',
+        7: 'Does the sentence mention a specific location?',
+        11: 'Is the input related to a specific industry or profession?',
+        14: 'Does the input involve planning or organizing?',
+        19: 'Does the sentence include technical or specialized terminology?',
+        21: 'Does the sentence contain a cultural reference?',
+        24: 'Does the sentence express a sense of belonging or connection to a place or community?',
+        26: 'Does the text include a planning or decision-making process?',
+        27: 'Does the sentence include a personal anecdote or story?',
+        29: 'Does the text describe a journey?',
+       
+       -5: 'Is there a first-person pronoun in the input?',
+       -6: 'Is the sentence part of a legal document or text?',
+       -7: 'Does the input describe a scientific experiment or discovery?',
+       -8: 'Does the input discuss a breakthrough in medical research?',
+       -9: 'Does the input involve a coding or programming concept?',
+       -10: 'Is an educational lesson or class described?'
+    }),
+    # 'Planning': (6, {
+    #     35: 'Does the sentence involve a planning or decision-making process?',
+    #     36: 'Does the sentence involve a discussion about future plans or intentions?',
+    # }),
+}
+REMAP_QUESTIONS_TO_CATEGORY_IDXS = {}
+for category, (idx, questions_dict) in REMAP_CATEGORY_TO_QUESTIONS.items():
+    for q_idx, q in questions_dict.items():
+        REMAP_QUESTIONS_TO_CATEGORY_IDXS[q] = idx
+
+REMAP_QUESTIONS_TO_CATEGORY_NAMES = {}
+for category, (idx, questions_dict) in REMAP_CATEGORY_TO_QUESTIONS.items():
+    for q_idx, q in questions_dict.items():
+        REMAP_QUESTIONS_TO_CATEGORY_NAMES[q] = category
 
 def compute_pvals(flatmaps_qa_list, frac_voxels_to_keep, corrs_gt_arr, flatmaps_null, mask_corrs=None):
     '''
