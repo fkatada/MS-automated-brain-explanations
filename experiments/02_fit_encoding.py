@@ -83,7 +83,7 @@ def add_main_args(parser):
                         help='Alpha to use when running feature selection (if >= 0). Alpha to use for feature selection.')
     parser.add_argument("--feature_selection_frac", type=float,
                         default=0.5,
-                        help='''Randomly bootsraps data to this fraction of examples.
+                        help='''Randomly bootstraps data to this fraction of examples.
                         Applies if feature_selection_alpha >= 0.''')
     parser.add_argument("--feature_selection_stability_seeds", type=int,
                         default=-1,
