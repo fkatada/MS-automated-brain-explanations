@@ -24,6 +24,7 @@ REMAP_CATEGORY_TO_QUESTIONS = {
         35: 'Does the sentence involve a planning or decision-making process?',
         36: 'Does the sentence involve a discussion about future plans or intentions?',
         -1: 'Does the sentence contain words with strong visual imagery?',
+        7: 'Does the sentence mention a specific location?',
     }),
     'Communication': (1, {
         3: 'Does the sentence describe a personal or social interaction that leads to a change or revelation?',
@@ -57,7 +58,6 @@ REMAP_CATEGORY_TO_QUESTIONS = {
     }),
     'Other': (5, {
         1: 'Does the sentence contain a proper noun?',
-        7: 'Does the sentence mention a specific location?',
         11: 'Is the input related to a specific industry or profession?',
         14: 'Does the input involve planning or organizing?',
         19: 'Does the sentence include technical or specialized terminology?',
