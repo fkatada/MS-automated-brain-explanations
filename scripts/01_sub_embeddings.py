@@ -33,8 +33,12 @@ params_shared_dict = {
     # 'use_eval_brain_drive': [1],
 
     # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/may27'],
-    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jun8'],
-    'seed_stories': range(4),
+    # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jun8'],
+    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul12_2025'],
+    # 'seed_stories': range(4),
+
+    # this was 1 for the science paper, but set to 0 for the ml papers
+    'use_huge': [0],
 }
 
 params_coupled_dict = {
@@ -59,14 +63,15 @@ params_coupled_dict = {
     # qa versions
     [
         ('qa_embedder', version, model, None)
-        for version in ['v1neurosynth']
-        # for version in ['v3_boostexamples']
+        # for version in ['v1neurosynth']
+        for version in ['v3_boostexamples']
         #     # ensemble1, v4, v5, v6, v4_boostexamples
         # # for version in ['v1', 'v2', 'v3_boostexamples', 'v3']
         # for model in [MIST7B, LLAMA8B, LLAMA8B_fewshot]
         # for model in [LLAMA8B_fewshot]
         # for model in [LLAMA70B]
-        for model in [LLAMA11B]
+        # for model in ['Qwen/Qwen3-8B']
+        for model in ['Qwen/Qwen3-8B', 'google/gemma-2-9b-it', 'mistralai/Ministral-8B-Instruct-2410', ]
     ]
 
     # let's just skip llama 7B/8B
@@ -101,7 +106,7 @@ submit_utils.run_args_list(
     unique_seeds='seed_stories',
     # amlt_kwargs=amlt_kwargs,
     # gpu_ids=[0, 1],
-    # gpu_ids=[0, 1, 2, 3],
+    gpu_ids=[1, 2, 3],
     # gpu_ids=[[0, 1], [2, 3]],
     # gpu_ids=[[0, 1, 2, 3]],
     # actually_run=False,

@@ -17,7 +17,8 @@ import neuro.features.qa_questions as qa_questions
 from neuro.data.interp_data import expinterp2D, lanczosinterp2D
 from neuro.data.semantic_model import SemanticModel
 from neuro.data.utils_ds import apply_model_to_words
-from neuro.features.qa_embedder import FinetunedQAEmbedder, QuestionEmbedder
+from neuro.features.qa_embedder import FinetunedQAEmbedder
+from imodelsx.qaemb.qaemb import QAEmb
 from neuro.features.questions.gpt4 import QS_35_STABLE, QS_HYPOTHESES_COMPUTED
 from neuro.features.stim_utils import load_story_wordseqs_wrapper
 
@@ -248,7 +249,7 @@ def get_llm_vectors(
         if checkpoint == 'qa_embedder':
             questions = qa_questions.get_questions(
                 version=qa_questions_version)
-            return QuestionEmbedder(
+            return QAEmb(
                 # dont cache calls locally
                 checkpoint=qa_embedding_model, questions=questions, use_cache=False)
         elif checkpoint.startswith('finetune_'):

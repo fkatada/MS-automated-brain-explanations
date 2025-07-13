@@ -1,5 +1,8 @@
 
 import warnings
+import numpy as np
+import joblib
+import pandas as pd
 
 TRAIN_01_PUBLIC = ['adollshouse', 'gpsformylostidentity', 'singlewomanseekingmanwich', 'adventuresinsayingyes', 'hangtime', 'sloth', 'afatherscover', 'haveyoumethimyet', 'souls', 'againstthewind', 'howtodraw', 'stagefright', 'alternateithicatom', 'ifthishaircouldtalk', 'stumblinginthedark', 'avatar', 'inamoment', 'superheroesjustforeachother', 'backsideofthestorm', 'itsabox', 'sweetaspie', 'becomingindian', 'jugglingandjesus', 'swimmingwithastronauts', 'beneaththemushroomcloud', 'kiksuya', 'thatthingonmyarm', 'birthofanation', 'leavingbaghdad', 'theadvancedbeginner', 'bluehope', 'legacy', 'theclosetthatateeverything', 'breakingupintheageofgoogle', 'lifeanddeathontheoregontrail', 'thecurse', 'buck', 'life', 'thefreedomridersandme', 'catfishingstrangerstofindmyself',
                    'lifereimagined', 'theinterview', 'cautioneating', 'listo', 'thepostmanalwayscalls', 'christmas1940', 'mayorofthefreaks', 'theshower', 'cocoonoflove', 'metsmagic', 'thetiniestbouquet', 'comingofageondeathrow', 'mybackseatviewofagreatromance', 'thetriangleshirtwaistconnection', 'exorcism', 'myfathershands', 'threemonths', 'eyespy', 'myfirstdaywiththeyankees', 'thumbsup', 'firetestforlove', 'naked', 'tildeath', 'food', 'notontheusualtour', 'treasureisland', 'forgettingfear', 'odetostepfather', 'undertheinfluence', 'onlyonewaytofindout', 'vixenandtheussr', 'gangstersandcookies', 'penpal', 'waitingtogo', 'goingthelibertyway', 'quietfire', 'whenmothersbullyback', 'goldiethegoldfish', 'reachingoutbetweenthebars', 'golfclubbing', 'shoppinginchina', 'wildwomenanddancingqueens']
@@ -69,7 +72,6 @@ TEST_BRAINDRIVE = {
               'GenStory16', 'GenStory17'],
 }
 
-
 def get_story_names(subject: str = "UTS01", train_or_test="train", use_huge=False, use_brain_drive=False, all=False):
 
     if use_brain_drive:
@@ -100,6 +102,61 @@ def get_story_names(subject: str = "UTS01", train_or_test="train", use_huge=Fals
 
     return story_names
 
+
+def get_story_names_from_args(args):
+    if args.use_test_setup == 1:
+        args.nboots = 5
+        args.use_extract_only = 0
+        args.use_huge = 1
+        story_names_train = ['sloth', 'adollshouse']
+        story_names_test = ['fromboyhoodtofatherhood']
+        # story_names_train = get_story_names(
+        # args.subject, 'train', use_huge=args.use_huge)[:20]
+        # story_names_test = get_story_names(
+        # args.subject, 'test', use_huge=args.use_huge)[:20]
+        args.pc_components = 100
+        args.use_eval_brain_drive = 0
+        # args.qa_embedding_model = 'mistralai/Mistral-7B-Instruct-v0.2'
+        # args.feature_selection_frac = 0.2
+    elif args.use_test_setup == 2:
+        args.nboots = 3
+        args.feature_space = 'eng1000'
+        args.use_extract_only = 0
+        args.use_huge = 1
+        args.subject = 'UTS02'
+        story_names_train = get_story_names(
+            args.subject, 'train', use_huge=args.use_huge)
+        story_names_test = ['adollshouse', 'hangtime', 'sloth']
+        story_names_train = [
+            s for s in story_names_train if s not in story_names_test]
+        # story_names_test = ['sloth', 'adollshouse', 'fromboyhoodtofatherhood']
+        story_names_test = ['GenStory27', 'GenStory28', 'GenStory29']
+        args.pc_components = 100
+        args.use_eval_brain_drive = 0
+    elif args.use_test_setup == 3:
+        # eng1000 full run
+        args.nboots = 5
+        args.feature_space = 'eng1000'
+        args.use_extract_only = 0
+        args.use_huge = 1
+        args.subject = 'UTS03'
+        story_names_train = get_story_names(
+            args.subject, 'train', use_huge=args.use_huge)
+        story_names_test = get_story_names(
+            args.subject, 'test', use_huge=args.use_huge)
+    else:
+        story_names_train = get_story_names(
+            args.subject, 'train', use_huge=args.use_huge)
+        story_names_test = get_story_names(
+            args.subject, 'test', use_huge=args.use_huge)
+
+    if args.num_stories > 0:
+        story_names_train = story_names_train[:args.num_stories]
+        story_names_test = story_names_test[:args.num_stories]
+
+    rng = np.random.default_rng(args.seed_stories)
+    rng.shuffle(story_names_train)
+    return story_names_train, story_names_test
 
 if __name__ == "__main__":
     for subject in ['UTS01', 'UTS02', 'UTS03', 'UTS04', 'UTS05', 'UTS06', 'UTS07', 'UTS08', 'shared']:
