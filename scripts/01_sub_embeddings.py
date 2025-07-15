@@ -36,9 +36,6 @@ params_shared_dict = {
     # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jun8'],
     'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul12_2025'],
     # 'seed_stories': range(4),
-
-    # this was 1 for the science paper, but set to 0 for the ml papers
-    'use_huge': [0],
 }
 
 params_coupled_dict = {

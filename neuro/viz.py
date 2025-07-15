@@ -79,13 +79,25 @@ def dset_rename(x):
 
 
 def quickshow(
-        X: np.ndarray, subject="UTS03", fname_save=None, cmap='RdBu_r',
-        with_colorbar=True, kwargs={'with_rois': True}, cmap_perc_to_hide=None, center=True):
+        X: np.ndarray, subject=None, fname_save=None, cmap='RdBu_r',
+        with_colorbar=True, kwargs={'with_rois': True}, cmap_perc_to_hide=None, center=True,
+        vmin=None, vmax=None,
+        ):
     """
     Actual visualizations
     Note: for this to work, need to point the cortex config filestore to the `ds003020/derivative/pycortex-db` directory.
     This might look something like `/home/chansingh/mntv1/deep-fMRI/data/ds003020/derivative/pycortex-db/UTS03/anatomicals/`
     """
+    if subject == None:
+        if X.size == 81126:
+            subject = 'UTS01'
+        elif X.size == 94251:
+            subject = 'UTS02'
+        elif X.size == 95556:
+            subject = 'UTS03'
+        else:
+            subject = 'UTS03'
+
     if isinstance(cmap, int):
         # cmap = sns.color_palette("husl", cmap, as_cmap=True)
         tab10 = plt.get_cmap('tab10')
@@ -120,6 +132,11 @@ def quickshow(
         if cmap_perc_to_hide is not None:
             vol.vmin = np.nanpercentile(X, cmap_perc_to_hide)
             vol.vmax = np.nanpercentile(X, 100 - cmap_perc_to_hide)
+
+    if vmin is not None:
+        vol.vmin = vmin
+    if vmax is not None:
+        vol.vmax = vmax
     # fig = plt.figure()
     # , vmin=-vabs, vmax=vabs)
     cortex.quickshow(vol, with_colorbar=with_colorbar, **kwargs)
