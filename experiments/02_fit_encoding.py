@@ -192,51 +192,17 @@ def _check_args(args):
 
     return args
 
-
-if __name__ == "__main__":
-    # get args
-    parser = argparse.ArgumentParser()
-    parser_without_computational_args = add_main_args(parser)
-    parser = add_computational_args(
-        deepcopy(parser_without_computational_args))
-    args = parser.parse_args()
-    args = _check_args(args)
-
-    # set up logging
-    logger = logging.getLogger()
-    logging.basicConfig(level=logging.INFO)
-
-    # set up saving directory + check for cache
-    already_cached, save_dir_unique = imodelsx.cache_save_utils.get_save_dir_unique(
-        parser, parser_without_computational_args, args, args.save_dir
-    )
-    if args.use_cache and already_cached and not args.use_test_setup:
-        print("cached version exists! Successfully skipping :)\n\n\n")
-        exit(0)
-    for k in sorted(vars(args)):
-        print("\t" + k + " " + str(vars(args)[k]))
-    logging.info("\n\n\tsaving to " + save_dir_unique + "\n")
-
-    # set seed
-    t0 = time.time()
-    np.random.seed(args.seed)
-    random.seed(args.seed)
-    torch.manual_seed(args.seed)
-
-    r = defaultdict(list)
-    r.update(vars(args))
-    r["save_dir_unique"] = save_dir_unique
-
+def run_pipeline(args, r):
     # get data
     story_names_train, story_names_test = story_names.get_story_names_from_args(args)
     if args.use_extract_only:
         # extract braindrive
-        if args.use_eval_brain_drive:
-            story_names_brain_drive = story_names.get_story_names(
-                use_brain_drive=True, all=True)
-            stim_brain_drive_delayed = feature_utils.get_features_full(
-                args, args.feature_space,  args.qa_embedding_model, story_names_brain_drive,
-                use_brain_drive=True, use_added_wordrate_feature=args.use_added_wordrate_feature)
+        # if args.use_eval_brain_drive:
+        #     story_names_brain_drive = story_names.get_story_names(
+        #         use_brain_drive=True, all=True)
+        #     stim_brain_drive_delayed = feature_utils.get_features_full(
+        #         args, args.feature_space,  args.qa_embedding_model, story_names_brain_drive,
+        #         use_brain_drive=True, use_added_wordrate_feature=args.use_added_wordrate_feature)
 
         all_stories = story_names.get_story_names(all=True)
         random.shuffle(all_stories)
@@ -303,21 +269,60 @@ if __name__ == "__main__":
         # r['corrs_tune_pc_weighted_mean'] = np.mean(
         #     explained_var_weight * r['corrs_tune_pc'])
 
-    '''
-    if args.use_eval_brain_drive and args.subject in story_names.TEST_BRAINDRIVE.keys():
-        story_names_brain_drive = story_names.get_story_names(
-            subject=args.subject, use_brain_drive=True)
-        stim_brain_drive_delayed = feature_utils.get_features_full(
-            args, args.feature_space, args.qa_embedding_model, story_names_brain_drive, use_brain_drive=True, use_added_wordrate_feature=args.use_added_wordrate_feature)
-        resp_brain_drive = response_utils.load_response_wrapper(
-            args, story_names_brain_drive, args.subject, use_brain_drive=True)
-        r['corrs_brain_drive'] = evaluate_pc_model_on_each_voxel(
-            args, stim_brain_drive_delayed, resp_brain_drive,
-            model_params_to_save, pca, scaler_test)'
-    '''
+    
+    # if args.use_eval_brain_drive and args.subject in story_names.TEST_BRAINDRIVE.keys():
+    #     story_names_brain_drive = story_names.get_story_names(
+    #         subject=args.subject, use_brain_drive=True)
+    #     stim_brain_drive_delayed = feature_utils.get_features_full(
+    #         args, args.feature_space, args.qa_embedding_model, story_names_brain_drive, use_brain_drive=True, use_added_wordrate_feature=args.use_added_wordrate_feature)
+    #     resp_brain_drive = response_utils.load_response_wrapper(
+    #         args, story_names_brain_drive, args.subject, use_brain_drive=True)
+    #     r['corrs_brain_drive'] = evaluate_pc_model_on_each_voxel(
+    #         args, stim_brain_drive_delayed, resp_brain_drive,
+    #         model_params_to_save, pca, scaler_test)
+    
 
     # add extra stats
     r = add_summary_stats(r, verbose=True)
+    return r, model_params_to_save
+
+
+if __name__ == "__main__":
+    # get args
+    parser = argparse.ArgumentParser()
+    parser_without_computational_args = add_main_args(parser)
+    parser = add_computational_args(
+        deepcopy(parser_without_computational_args))
+    args = parser.parse_args()
+    args = _check_args(args)
+
+    # set up logging
+    logger = logging.getLogger()
+    logging.basicConfig(level=logging.INFO)
+
+    # set up saving directory + check for cache
+    already_cached, save_dir_unique = imodelsx.cache_save_utils.get_save_dir_unique(
+        parser, parser_without_computational_args, args, args.save_dir
+    )
+    if args.use_cache and already_cached and not args.use_test_setup:
+        print("cached version exists! Successfully skipping :)\n\n\n")
+        exit(0)
+    for k in sorted(vars(args)):
+        print("\t" + k + " " + str(vars(args)[k]))
+    logging.info("\n\n\tsaving to " + save_dir_unique + "\n")
+
+    # set seed
+    t0 = time.time()
+    np.random.seed(args.seed)
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+
+    r = defaultdict(list)
+    r.update(vars(args))
+    r["git_commit_id"] = imodelsx.cache_save_utils.get_git_commit_id()
+    r["save_dir_unique"] = save_dir_unique
+
+    r, model_params_to_save = run_pipeline(args, r)
 
     os.makedirs(save_dir_unique, exist_ok=True)
     joblib.dump(r, join(save_dir_unique, "results.pkl"))

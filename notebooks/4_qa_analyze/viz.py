@@ -25,6 +25,7 @@ REMAP_CATEGORY_TO_QUESTIONS = {
         36: 'Does the sentence involve a discussion about future plans or intentions?',
         -1: 'Does the sentence contain words with strong visual imagery?',
         7: 'Does the sentence mention a specific location?',
+        29: 'Does the text describe a journey?',
     }),
     'Communication': (1, {
         3: 'Does the sentence describe a personal or social interaction that leads to a change or revelation?',
@@ -65,7 +66,6 @@ REMAP_CATEGORY_TO_QUESTIONS = {
         24: 'Does the sentence express a sense of belonging or connection to a place or community?',
         26: 'Does the text include a planning or decision-making process?',
         27: 'Does the sentence include a personal anecdote or story?',
-        29: 'Does the text describe a journey?',
        
        -5: 'Is there a first-person pronoun in the input?',
        -6: 'Is the sentence part of a legal document or text?',
