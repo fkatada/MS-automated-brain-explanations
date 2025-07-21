@@ -68,7 +68,7 @@ params_coupled_dict = {
         # for model in [LLAMA8B_fewshot]
         # for model in [LLAMA70B]
         # for model in ['Qwen/Qwen3-8B']
-        for model in ['Qwen/Qwen3-8B', 'google/gemma-2-9b-it', 'mistralai/Ministral-8B-Instruct-2410', ]
+        for model in ['Qwen/Qwen3-8B', 'google/gemma-2-9b-it', 'mistralai/Ministral-8B-Instruct-2410',]
     ]
 
     # let's just skip llama 7B/8B
@@ -91,8 +91,9 @@ script_name = join(repo_dir, 'experiments', '02_fit_encoding.py')
 amlt_kwargs = {
     # change this to run a cpu job
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
+    'sku': 'G1-A100',
     # [64G16-MI200-IB-xGMI, 64G16-MI200-xGMI
-    'sku': '64G8-MI200-xGMI',
+    # 'sku': '64G8-MI200-xGMI',
     # 'sku': '64G4-MI200-xGMI',
     # 'sku': '64G2-MI200-xGMI',
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
@@ -100,10 +101,10 @@ amlt_kwargs = {
 submit_utils.run_args_list(
     args_list,
     script_name=script_name,
-    unique_seeds='seed_stories',
-    # amlt_kwargs=amlt_kwargs,
+    unique_seeds='seed_stories', # sets seed_stories to be randomly unique for each run
+    amlt_kwargs=amlt_kwargs,
     # gpu_ids=[0, 1],
-    gpu_ids=[1, 2, 3],
+    # gpu_ids=[1, 2, 3],
     # gpu_ids=[[0, 1], [2, 3]],
     # gpu_ids=[[0, 1, 2, 3]],
     # actually_run=False,

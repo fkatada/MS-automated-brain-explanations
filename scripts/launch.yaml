@@ -4,10 +4,8 @@
 
 description: fMRI embedding extraction
 environment:
-  image: amlt-sing/acpt-rocm5.7_ubuntu20.04_py3.10_pytorch_2.0.1
-  # image: amlt-sing/acpt-rocm5.4.2_ubuntu20.04_py3.8_pytorch_2.0.0
-  # image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
-  # registry: docker.io
+  image: amlt-sing/acpt-torch2.7.0-py3.10-cuda12.6-ubuntu22.04
+  # image: amlt-sing/acpt-rocm6.1_ubuntu20.04_py3.9_pytorch2.1.2 # for amd gpus
   setup:
     - pip install -r requirements.txt --user
     - git clone https://github.com/csinva/imodelsX.git
@@ -18,15 +16,14 @@ code:
   local_dir: $CONFIG_DIR/.. # CONFIG_DIR is the directory where this launch.yaml file is located
 
 # target:
-#   service: amlk8s
-#   name: itplabrr1cl1
-#   vc: resrchvc
+#   service: sing
+#   name: msrresrchvc
+#   workspace_name: chansinghws
 
 target:
   service: sing
-  name: huashanvc1
-  # resource_group: gcr-singularity-lab
-  workspace_name: gcrllama2ws
+  name: msroctovc
+  workspace_name: chansinghws
 
 
 storage:
