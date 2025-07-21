@@ -180,6 +180,12 @@ def add_computational_args(parser):
         default=1,
         help='seed for order that stories are processed in',
     )
+    parser.add_argument(
+        '--qa_batch_size',
+        type=int,
+        default=16,
+        help='batch size for QA embedding extraction',
+    )
     return parser
 
 
@@ -337,6 +343,9 @@ if __name__ == "__main__":
                 save_dir_unique, "model_params.pkl"))
         print(
             f"Succesfully completed in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
+
+
+
     elif args.feature_space == 'qa_agent':
         for epoch in range(args.num_agent_epochs):
 

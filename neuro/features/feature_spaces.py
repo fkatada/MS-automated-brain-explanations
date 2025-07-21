@@ -239,6 +239,7 @@ def get_llm_vectors(
     qa_questions_version='v1',
     downsample='lanczos',
     use_cache=True,
+    batch_size=16,
     **kwargs
 ) -> Dict[str, np.ndarray]:
     """Get llm embedding vectors
@@ -254,7 +255,7 @@ def get_llm_vectors(
                 questions = qa_questions_version
             return QAEmb(
                 # dont cache calls locally
-                checkpoint=qa_embedding_model, questions=questions, use_cache=False, batch_size=32)
+                checkpoint=qa_embedding_model, questions=questions, use_cache=False, batch_size=batch_size)
         elif feature_space.startswith('finetune_'):
             return FinetunedQAEmbedder(
                 feature_space.replace('finetune_', '').replace('_binary', ''), qa_questions_version=qa_questions_version)
@@ -417,7 +418,7 @@ def get_features(args, feature_space, **kwargs):
     elif feature_space == 'wordrate':
         return get_wordrate_vectors(wordseqs, **kwargs)
     else:
-        return get_llm_vectors(wordseqs, feature_space=feature_space, **kwargs, **kwargs_extra)
+        return get_llm_vectors(wordseqs, feature_space=feature_space, batch_size=args.qa_batch_size, **kwargs, **kwargs_extra)
 
 if __name__ == "__main__":
     kwargs = {
@@ -425,6 +426,7 @@ if __name__ == "__main__":
         'qa_embedding_model': 'mistralai/Mistral-7B-Instruct-v0.2',
         'use_huge': True, 'use_brain_drive': False,
         'num_ngrams_context': 10,
+        'qa_batch_size': 16,
         
         # 'feature_space': 'qa_embedder',
         # 'qa_questions_version': 'v1',
