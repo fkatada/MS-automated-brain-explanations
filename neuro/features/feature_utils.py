@@ -54,6 +54,8 @@ def get_features_full(
     if 'qa_embedder' in feature_space:
         kwargs_list = qa_questions.get_kwargs_list_for_version_str(
             args.qa_questions_version)
+    elif 'qa_agent' in feature_space:
+        kwargs_list = [{'qa_questions_version': args.qa_questions_version}]
     else:
         kwargs_list = [{}]
 

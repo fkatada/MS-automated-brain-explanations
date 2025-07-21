@@ -230,7 +230,7 @@ def get_ngrams_list_main(ds, num_trs_context=None, num_secs_context_per_word=Non
 def get_llm_vectors(
     wordseqs,
     story_names,
-    checkpoint='bert-base-uncased',
+    feature_space='bert-base-uncased',
     num_ngrams_context=10,
     num_trs_context=None,
     num_secs_context_per_word=None,
@@ -244,9 +244,9 @@ def get_llm_vectors(
     """Get llm embedding vectors
     """
 
-    def _get_embedding_model(checkpoint, qa_questions_version, qa_embedding_model):
+    def _get_embedding_model(feature_space, qa_questions_version, qa_embedding_model):
         print('loading embedding_model...')
-        if checkpoint in ['qa_embedder', 'qa_agent']:
+        if feature_space in ['qa_embedder', 'qa_agent']:
             if isinstance(qa_questions_version, str):
                 questions = qa_questions.get_questions(
                     version=qa_questions_version)
@@ -254,30 +254,30 @@ def get_llm_vectors(
                 questions = qa_questions_version
             return QAEmb(
                 # dont cache calls locally
-                checkpoint=qa_embedding_model, questions=questions, use_cache=False)
-        elif checkpoint.startswith('finetune_'):
+                checkpoint=qa_embedding_model, questions=questions, use_cache=False, batch_size=32)
+        elif feature_space.startswith('finetune_'):
             return FinetunedQAEmbedder(
-                checkpoint.replace('finetune_', '').replace('_binary', ''), qa_questions_version=qa_questions_version)
-        if not checkpoint == 'qa_embedder':
-            if 'bert' in checkpoint.lower():
-                return pipeline("feature-extraction", model=checkpoint, device=0)
+                feature_space.replace('finetune_', '').replace('_binary', ''), qa_questions_version=qa_questions_version)
+        if not feature_space == 'qa_embedder':
+            if 'bert' in feature_space.lower():
+                return pipeline("feature-extraction", model=feature_space, device=0)
             elif layer_idx is not None:
-                return imodelsx.llm.LLMEmbs(checkpoint=checkpoint)
+                return imodelsx.llm.LLMEmbs(checkpoint=feature_space)
 
     assert not (
         num_trs_context and num_secs_context_per_word), 'num_trs_context and num_secs_context_per_word are mutually exclusive'
     vectors = {}
     ngrams_list_dict = {}
     embedding_model = None  # only initialize if needed
-    if checkpoint == 'qa_embedder':
+    if feature_space == 'qa_embedder' or feature_space == 'qa_agent':
         logging.info(
-            f'extracting {checkpoint} {qa_questions_version} {qa_embedding_model} embs...')
+            f'extracting {feature_space} {qa_questions_version} {qa_embedding_model} embs...')
     else:
-        logging.info(f'extracting {checkpoint} {qa_questions_version} embs...')
+        logging.info(f'extracting {feature_space} {qa_questions_version} embs...')
 
     for story_num, story in enumerate(story_names):
         # qa agent does caching per-question per-story, so has its own handling
-        if checkpoint == 'qa_agent':
+        if feature_space == 'qa_agent':
             assert qa_embedding_model != 'gpt4', \
                 'qa_agent does not support gpt4, use qa_embedder instead'
             assert isinstance(qa_questions_version, list), \
@@ -303,7 +303,7 @@ def get_llm_vectors(
                         f'Computing {story_num}/{len(story_names)}: {story} Q{i}/{len(qa_questions_version)}: {q}')
                     if embedding_model is None:
                         embedding_model = _get_embedding_model(
-                            checkpoint, qa_questions_version, qa_embedding_model)
+                            feature_space, qa_questions_version, qa_embedding_model)
                     if not story in ngrams_list_dict:
                         ngrams_list_dict[story] = get_ngrams_list_main(
                             wordseqs[story], num_trs_context, num_secs_context_per_word, num_ngrams_context)
@@ -321,7 +321,7 @@ def get_llm_vectors(
             # non-qa agent: try loading from cache
             loaded_from_cache = False
             if qa_embedding_model != 'gpt4':
-                args_cache = {'story': story, 'model': checkpoint, 'ngram_size': num_ngrams_context,
+                args_cache = {'story': story, 'model': feature_space, 'ngram_size': num_ngrams_context,
                             'qa_embedding_model': qa_embedding_model, 'qa_questions_version': qa_questions_version,
                             'num_trs_context': num_trs_context, 'num_secs_context_per_word': num_secs_context_per_word}
                 if layer_idx is not None:
@@ -330,7 +330,7 @@ def get_llm_vectors(
                     args_cache['story_gen'] = True
                 cache_hash = sha256(args_cache)
                 cache_file = join(
-                    config.CACHE_EMBS_DIR, qa_questions_version, checkpoint.replace('/', '_'), f'{cache_hash}.jl')
+                    config.CACHE_EMBS_DIR, qa_questions_version, feature_space.replace('/', '_'), f'{cache_hash}.jl')
                 if os.path.exists(cache_file) and use_cache:
                     logging.info(
                         f'Loading cached {story_num}/{len(story_names)}: {story}')
@@ -355,24 +355,24 @@ def get_llm_vectors(
                 # embed the ngrams
                 if embedding_model is None:
                     embedding_model = _get_embedding_model(
-                        checkpoint, qa_questions_version, qa_embedding_model)
-                if checkpoint == 'qa_embedder':
+                        feature_space, qa_questions_version, qa_embedding_model)
+                if feature_space == 'qa_embedder':
                     print(f'Extracting {story_num}/{len(story_names)}: {story}')
                     embs = embedding_model(ngrams_list_dict[story], verbose=False)
-                elif checkpoint.startswith('finetune_'):
+                elif feature_space.startswith('finetune_'):
                     embs = embedding_model.get_embs_from_text_list(ngrams_list_dict[story])
-                    if '_binary' in checkpoint:
+                    if '_binary' in feature_space:
                         embs = embs.argmax(axis=-1)  # get yes/no binarized`
                     else:
                         embs = embs[:, :, 1]  # get logit for yes
-                elif 'bert' in checkpoint:
+                elif 'bert' in feature_space:
                     embs = get_embs_from_text_list(
                         ngrams_list_dict[story], embedding_function=embedding_model)
                 elif layer_idx is not None:
                     embs = embedding_model(
                         ngrams_list_dict[story], layer_idx=layer_idx, batch_size=8)
                 else:
-                    raise ValueError(checkpoint)
+                    raise ValueError(feature_space)
 
                 # if num_trs_context is None:
                     # embs = DataSequence(
@@ -399,7 +399,6 @@ def _get_kwargs_extra(args):
             kwargs['num_trs_context'] = args.input_chunking_size
         elif args.input_chunking_type == 'sec':
             kwargs['num_secs_context_per_word'] = args.input_chunking_size
-    kwargs['checkpoint'] = args.feature_space
 
     # also pass layer
     if hasattr(args, 'embedding_layer') and args.embedding_layer >= 0:
@@ -418,7 +417,7 @@ def get_features(args, feature_space, **kwargs):
     elif feature_space == 'wordrate':
         return get_wordrate_vectors(wordseqs, **kwargs)
     else:
-        return get_llm_vectors(wordseqs, **kwargs, **kwargs_extra)
+        return get_llm_vectors(wordseqs, feature_space=feature_space, **kwargs, **kwargs_extra)
 
 if __name__ == "__main__":
     kwargs = {
@@ -427,10 +426,10 @@ if __name__ == "__main__":
         'use_huge': True, 'use_brain_drive': False,
         'num_ngrams_context': 10,
         
-        # 'checkpoint': 'qa_embedder',
+        # 'feature_space': 'qa_embedder',
         # 'qa_questions_version': 'v1',
 
-        'checkpoint': 'qa_agent',
+        'feature_space': 'qa_agent',
         'qa_questions_version': ['Does the sentence contain a proper noun?'],
     }
     logging.basicConfig(level=logging.INFO)

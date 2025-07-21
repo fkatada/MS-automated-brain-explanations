@@ -61,7 +61,7 @@ def add_main_args(parser):
     # encoding
     parser.add_argument("--feature_space", type=str,
                         default='qa_embedder',
-                        choices=['qa_embedder', 'eng1000', 'wordrate', 'finetune_roberta-base', 'finetune_roberta-base_binary',
+                        choices=['qa_embedder', 'qa_agent', 'eng1000', 'wordrate', 'finetune_roberta-base', 'finetune_roberta-base_binary',
                                  'bert-base-uncased', 'distilbert-base-uncased',  'roberta-base',
                                  'meta-llama/Llama-2-7b-hf', 'meta-llama/Llama-2-70b-hf', 'meta-llama/Meta-Llama-3-8B', 'meta-llama/Meta-Llama-3-70B'],
                         help='''Passing a standard HF model name will compute embeddings from that model.
@@ -115,6 +115,10 @@ def add_main_args(parser):
                         help='Whether to use a random subset of features')
     parser.add_argument("--single_question_idx", type=int, default=-1,
                         help='If passed, only use this question index for QA features')
+
+    # agent features
+    parser.add_argument("--num_agent_epochs", type=int, default=3,
+                        help='Number of epochs to train the agent for (if feature_space is qa_agent)')
 
     # linear modeling
     parser.add_argument("--encoding_model", type=str,
@@ -179,21 +183,22 @@ def add_computational_args(parser):
     return parser
 
 
-def _check_args(args):
+def _check_args(args, parser):
     if args.subject not in ['UTS01', 'UTS02', 'UTS03', 'shared'] and args.use_huge:
         args.use_huge = 0
         # warnings.warn(
         # f'Not using huge list of stories for subject {args.subject}')
 
     if args.embedding_layer >= 0:
-        assert args.feature_space not in ['qa_embedder', 'eng1000', 'finetune_roberta-base',
+        assert args.feature_space not in ['qa_agent', 'qa_embedder', 'eng1000', 'finetune_roberta-base',
                                           'finetune_roberta-base_binary'], f'embedding_layer only used for HF models but {args.feature_space} passed'
-        assert args.qa_questions_version == 'v1', 'embedding_layer only used with v1'
-        assert args.qa_embedding_model == 'mistralai/Mistral-7B-Instruct-v0.2', 'embedding_layer only used with dfeault (mistral) qa_embedding_model'
+        assert args.qa_questions_version == parser.get_default('qa_questions_version'), 'embedding_layer only used with v1'
+        assert args.qa_embedding_model == parser.get_default('qa_embedding_model'), 'embedding_layer only used with default (mistral) qa_embedding_model'
 
     return args
 
 def run_pipeline(args, r):
+
     # get data
     story_names_train, story_names_test = story_names.get_story_names_from_args(args)
     if args.use_extract_only:
@@ -295,7 +300,7 @@ if __name__ == "__main__":
     parser = add_computational_args(
         deepcopy(parser_without_computational_args))
     args = parser.parse_args()
-    args = _check_args(args)
+    args = _check_args(args, parser)
 
     # set up logging
     logger = logging.getLogger()
@@ -323,12 +328,40 @@ if __name__ == "__main__":
     r["git_commit_id"] = imodelsx.cache_save_utils.get_git_commit_id()
     r["save_dir_unique"] = save_dir_unique
 
-    r, model_params_to_save = run_pipeline(args, r)
+    if args.feature_space != 'qa_agent':
+        r, model_params_to_save = run_pipeline(args, r)
+        os.makedirs(save_dir_unique, exist_ok=True)
+        joblib.dump(r, join(save_dir_unique, "results.pkl"))
+        if args.encoding_model == 'ridge':
+            joblib.dump(model_params_to_save, join(
+                save_dir_unique, "model_params.pkl"))
+        print(
+            f"Succesfully completed in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
+    elif args.feature_space == 'qa_agent':
+        for epoch in range(args.num_agent_epochs):
 
-    os.makedirs(save_dir_unique, exist_ok=True)
-    joblib.dump(r, join(save_dir_unique, "results.pkl"))
-    if args.encoding_model == 'ridge':
-        joblib.dump(model_params_to_save, join(
-            save_dir_unique, "model_params.pkl"))
-    print(
-        f"Succesfully completed in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
+            logging.info(f"Running agent epoch {epoch + 1}/{args.num_agent_epochs}")
+            r['epoch'].append(epoch + 1)
+            r['questions_list'].append(args.qa_questions_version)
+
+            questions_init = ['Does the sentence describe a personal reflection or thought?',
+    'Does the sentence contain a proper noun?',
+    'Does the sentence describe a physical action?',]
+            args.qa_questions_version = questions_init
+            r, model_params_to_save = run_pipeline(args, r)
+
+            # modify the questions
+            args.qa_questions_version = ['Does the sentence involve the mention of a specific object or item?',
+    'Does the sentence involve a description of physical environment or setting?',
+    'Does the sentence describe a relationship between people?']
+
+
+
+            # save results
+            os.makedirs(save_dir_unique, exist_ok=True)
+            joblib.dump(r, join(save_dir_unique, "results.pkl"))
+            if args.encoding_model == 'ridge':
+                joblib.dump(model_params_to_save, join(
+                    save_dir_unique, "model_params.pkl"))
+            print(
+                f"Succesfully completed epoch {epoch + 1}/{args.num_agent_epochs} in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
