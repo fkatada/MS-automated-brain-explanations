@@ -246,9 +246,12 @@ def get_llm_vectors(
 
     def _get_embedding_model(checkpoint, qa_questions_version, qa_embedding_model):
         print('loading embedding_model...')
-        if checkpoint == 'qa_embedder':
-            questions = qa_questions.get_questions(
-                version=qa_questions_version)
+        if checkpoint in ['qa_embedder', 'qa_agent']:
+            if isinstance(qa_questions_version, str):
+                questions = qa_questions.get_questions(
+                    version=qa_questions_version)
+            elif isinstance(qa_questions_version, list):
+                questions = qa_questions_version
             return QAEmb(
                 # dont cache calls locally
                 checkpoint=qa_embedding_model, questions=questions, use_cache=False)
@@ -266,8 +269,6 @@ def get_llm_vectors(
     vectors = {}
     ngrams_list_dict = {}
     embedding_model = None  # only initialize if needed
-    # print('checkpoint', checkpoint, 'qa_questions_version',
-    #   qa_questions_version, 'qa_embedding_model', qa_embedding_model)
     if checkpoint == 'qa_embedder':
         logging.info(
             f'extracting {checkpoint} {qa_questions_version} {qa_embedding_model} embs...')
@@ -275,74 +276,109 @@ def get_llm_vectors(
         logging.info(f'extracting {checkpoint} {qa_questions_version} embs...')
 
     for story_num, story in enumerate(story_names):
-        args_cache = {'story': story, 'model': checkpoint, 'ngram_size': num_ngrams_context,
-                      'qa_embedding_model': qa_embedding_model, 'qa_questions_version': qa_questions_version,
-                      'num_trs_context': num_trs_context, 'num_secs_context_per_word': num_secs_context_per_word}
-        if layer_idx is not None:
-            args_cache['layer_idx'] = layer_idx
-        if 'genstory' in story.lower():
-            args_cache['story_gen'] = True
-        cache_hash = sha256(args_cache)
-        cache_file = join(
-            config.CACHE_EMBS_DIR, qa_questions_version, checkpoint.replace('/', '_'), f'{cache_hash}.jl')
-        loaded_from_cache = False
-        if os.path.exists(cache_file) and use_cache and qa_embedding_model != 'gpt4':
-            logging.info(
-                f'Loading cached {story_num}/{len(story_names)}: {story}')
-            try:
-                vectors[story] = joblib.load(cache_file)
-                loaded_from_cache = True
-                if not downsample:
-                    ngrams_list_dict[story] = get_ngrams_list_main(
-                        wordseqs[story], num_trs_context, num_secs_context_per_word, num_ngrams_context)
-                # print('Loaded', story, 'vectors', vectors[story].shape,
-                #   'unique', np.unique(vectors[story], return_counts=True))
-            except:
-                print('Error loading', cache_file)
+        # qa agent does caching per-question per-story, so has its own handling
+        if checkpoint == 'qa_agent':
+            assert qa_embedding_model != 'gpt4', \
+                'qa_agent does not support gpt4, use qa_embedder instead'
+            assert isinstance(qa_questions_version, list), \
+                'qa_questions_version must be a list of questions for qa_agent'
+            qa_vecs = {}
+            for i, q in enumerate(tqdm(qa_questions_version)):
+                loaded_from_cache = False
+                args_cache = {'story': story, 'model': qa_embedding_model, 'question': q, 'qa_embedding_model': qa_embedding_model, 'story_gen': 'genstory' in story.lower()}
+                cache_hash = sha256(args_cache)
+                cache_file = join(
+                    config.CACHE_EMBS_AGENT_DIR, qa_embedding_model.replace('/', '_'), f'{cache_hash}.jl')
+                
+                if os.path.exists(cache_file) and use_cache:
+                    logging.info(
+                        f'Loading cached {story_num}/{len(story_names)}: {story} Q{i}/{len(qa_questions_version)}: {q}')
+                    try:
+                        qa_vecs[q] = joblib.load(cache_file)
+                        loaded_from_cache = True
+                    except:
+                        print('Error loading', cache_file)
+                if not loaded_from_cache:
+                    logging.info(
+                        f'Computing {story_num}/{len(story_names)}: {story} Q{i}/{len(qa_questions_version)}: {q}')
+                    if embedding_model is None:
+                        embedding_model = _get_embedding_model(
+                            checkpoint, qa_questions_version, qa_embedding_model)
+                    if not story in ngrams_list_dict:
+                        ngrams_list_dict[story] = get_ngrams_list_main(
+                            wordseqs[story], num_trs_context, num_secs_context_per_word, num_ngrams_context)
+                    embedding_model.questions = [q]
+                    qa_vecs[q] = embedding_model(ngrams_list_dict[story], verbose=False)
+                    os.makedirs(dirname(cache_file), exist_ok=True)
+                    joblib.dump(qa_vecs[q], cache_file)
+            
+            # stack the vectors for all questions                    
+            assert len(qa_vecs) == len(qa_questions_version), \
+                f'Expected {len(qa_questions_version)} questions, got {len(qa_vecs)}'
+            vectors[story] = np.hstack(
+                [qa_vecs[q] for q in qa_questions_version])
+        else:
+            # non-qa agent: try loading from cache
+            loaded_from_cache = False
+            if qa_embedding_model != 'gpt4':
+                args_cache = {'story': story, 'model': checkpoint, 'ngram_size': num_ngrams_context,
+                            'qa_embedding_model': qa_embedding_model, 'qa_questions_version': qa_questions_version,
+                            'num_trs_context': num_trs_context, 'num_secs_context_per_word': num_secs_context_per_word}
+                if layer_idx is not None:
+                    args_cache['layer_idx'] = layer_idx
+                if 'genstory' in story.lower():
+                    args_cache['story_gen'] = True
+                cache_hash = sha256(args_cache)
+                cache_file = join(
+                    config.CACHE_EMBS_DIR, qa_questions_version, checkpoint.replace('/', '_'), f'{cache_hash}.jl')
+                if os.path.exists(cache_file) and use_cache:
+                    logging.info(
+                        f'Loading cached {story_num}/{len(story_names)}: {story}')
+                    try:
+                        vectors[story] = joblib.load(cache_file)
+                        loaded_from_cache = True
+                        # print('Loaded', story, 'vectors', vectors[story].shape,
+                        #   'unique', np.unique(vectors[story], return_counts=True))
+                    except:
+                        print('Error loading', cache_file)
+            elif qa_embedding_model == 'gpt4':
+                vectors[story] = get_gpt4_qa_embs_cached(
+                            story, qa_questions_version=qa_questions_version)
+                loaded_from_cache = True            
 
-        if not loaded_from_cache:
-            # print('didnt load with args', args_cache)
-            ngrams_list = get_ngrams_list_main(
-                wordseqs[story], num_trs_context, num_secs_context_per_word, num_ngrams_context)
+            # get ngrams_list if needed
+            if not downsample or not loaded_from_cache:
+                ngrams_list_dict[story] = get_ngrams_list_main(
+                    wordseqs[story], num_trs_context, num_secs_context_per_word, num_ngrams_context)
+            if not loaded_from_cache and not qa_embedding_model == 'gpt4':
 
-            # embed the ngrams
-            if embedding_model is None and not qa_embedding_model == 'gpt4':
-                embedding_model = _get_embedding_model(
-                    checkpoint, qa_questions_version, qa_embedding_model)
-            if checkpoint == 'qa_embedder':
-                print(f'Extracting {story_num}/{len(story_names)}: {story}')
-                if qa_embedding_model == 'gpt4':
-                    embs = get_gpt4_qa_embs_cached(
-                        story, qa_questions_version=qa_questions_version)
+                # embed the ngrams
+                if embedding_model is None:
+                    embedding_model = _get_embedding_model(
+                        checkpoint, qa_questions_version, qa_embedding_model)
+                if checkpoint == 'qa_embedder':
+                    print(f'Extracting {story_num}/{len(story_names)}: {story}')
+                    embs = embedding_model(ngrams_list_dict[story], verbose=False)
+                elif checkpoint.startswith('finetune_'):
+                    embs = embedding_model.get_embs_from_text_list(ngrams_list_dict[story])
+                    if '_binary' in checkpoint:
+                        embs = embs.argmax(axis=-1)  # get yes/no binarized`
+                    else:
+                        embs = embs[:, :, 1]  # get logit for yes
+                elif 'bert' in checkpoint:
+                    embs = get_embs_from_text_list(
+                        ngrams_list_dict[story], embedding_function=embedding_model)
+                elif layer_idx is not None:
+                    embs = embedding_model(
+                        ngrams_list_dict[story], layer_idx=layer_idx, batch_size=8)
                 else:
-                    embs = embedding_model(ngrams_list, verbose=False)
-            elif checkpoint.startswith('finetune_'):
-                embs = embedding_model.get_embs_from_text_list(ngrams_list)
-                if '_binary' in checkpoint:
-                    embs = embs.argmax(axis=-1)  # get yes/no binarized`
-                else:
-                    embs = embs[:, :, 1]  # get logit for yes
-            elif 'bert' in checkpoint:
-                embs = get_embs_from_text_list(
-                    ngrams_list, embedding_function=embedding_model)
-            # elif 'finetune' in checkpoint:
+                    raise ValueError(checkpoint)
 
-            elif layer_idx is not None:
-                embs = embedding_model(
-                    ngrams_list, layer_idx=layer_idx, batch_size=8)
-            else:
-                raise ValueError(checkpoint)
-
-            # if num_trs_context is None:
-                # embs = DataSequence(
-                # embs, ds.split_inds, ds.data_times, ds.tr_times).data
-            vectors[story] = deepcopy(embs)
-            if not downsample:
-                ngrams_list_dict[story] = deepcopy(ngrams_list)
-            # print(story, 'vectors', vectors[story].shape,
-            #   'unique', np.unique(vectors[story], return_counts=True))
-            os.makedirs(dirname(cache_file), exist_ok=True)
-            if not qa_embedding_model == 'gpt4':
+                # if num_trs_context is None:
+                    # embs = DataSequence(
+                    # embs, ds.split_inds, ds.data_times, ds.tr_times).data
+                vectors[story] = deepcopy(embs)
+                os.makedirs(dirname(cache_file), exist_ok=True)
                 joblib.dump(embs, cache_file)
 
     if num_trs_context is not None:
@@ -383,3 +419,22 @@ def get_features(args, feature_space, **kwargs):
         return get_wordrate_vectors(wordseqs, **kwargs)
     else:
         return get_llm_vectors(wordseqs, **kwargs, **kwargs_extra)
+
+if __name__ == "__main__":
+    kwargs = {
+        'story_names': ['sloth', 'adollshouse'],
+        'qa_embedding_model': 'mistralai/Mistral-7B-Instruct-v0.2',
+        'use_huge': True, 'use_brain_drive': False,
+        'num_ngrams_context': 10,
+        
+        # 'checkpoint': 'qa_embedder',
+        # 'qa_questions_version': 'v1',
+
+        'checkpoint': 'qa_agent',
+        'qa_questions_version': ['Does the sentence contain a proper noun?'],
+    }
+    logging.basicConfig(level=logging.INFO)
+    wordseqs = load_story_wordseqs_wrapper(
+        kwargs['story_names'], kwargs['use_huge'], kwargs['use_brain_drive'])
+    llm_vecs = get_llm_vectors(
+        wordseqs, **kwargs)

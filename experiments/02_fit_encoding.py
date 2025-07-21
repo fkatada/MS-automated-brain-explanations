@@ -105,10 +105,11 @@ def add_main_args(parser):
                         choices=['v1', 'v2', 'v3', 'v3_boostexamples',
                                  'v4_boostexamples', 'v4', 'v5', 'v3_boostexamples_merged'] +
                         ['v1neurosynth', 'qs_35'] + QS_HYPOTHESES_COMPUTED,
-                        help='''Which set of QA questions to use, if feature_space is qa_embedder.
-                        If passed a single question name, uses only that question with gpt4-extracted feats.
-                        v1neurosynth: will use the set of GPT-4 hypotheses that were not computed with GPT-4
-                        qs_35: the set of 35 stable questions
+                        help='''Only when feature_space is qa_embedder
+                        If one of the sets (e.g. v1, v2) - which set of QA questions to use.
+                            v1neurosynth: will use the set of GPT-4 hypotheses that were not computed with GPT-4
+                            qs_35: the set of 35 stable questions
+                        If single question, will use only that question (only supported with GPT-4).
                         ''')
     parser.add_argument("--use_random_subset_features", type=int, default=0,
                         help='Whether to use a random subset of features')
@@ -140,7 +141,7 @@ def add_main_args(parser):
     # basic params
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--use_test_setup', type=int, default=1,
-                        help='For fast testing - train/test on a couple stories with few nboots.')
+                        help='For fast testing - train/test on a couple stories with few nboots. Bypasses overall caching.')
     return parser
 
 
