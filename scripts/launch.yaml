@@ -45,5 +45,5 @@ storage:
 #   command:
 #   - echo "test2"
 
-# must end with just 'jobs:' for imodelsx
+# jobs gets overwritten by imodelsx.submit_utils.run_args_list
 jobs:

@@ -36,12 +36,13 @@ params_shared_dict = {
     # 'subject': ['UTS04'],
 
     # ['UTS01', 'UTS02', 'UTS03', 'UTS04', 'UTS05', 'UTS06', 'UTS07', 'UTS08']
-    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jun8'],
+    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul21_2025_agentic_test'],
+    # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jun8'],
     # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/may7'],
     # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/may27'],
-    'use_eval_brain_drive': [1],
-    'ndelays': [4, 8],
-    # 'ndelays': [8],
+    'use_eval_brain_drive': [0],
+    # 'ndelays': [4, 8],
+    'ndelays': [8],
 
     # default is -1, SO4-SO8 have 24 or 25 stories
     'num_stories': [-1],  # , 5, 10, 20],
@@ -72,10 +73,10 @@ params_coupled_dict = {
     [
         # ensemble1
         # questions: v4, v5, v6, v4_boostexamples, v1, v2, v3_boostexamples, v3, 'v3_boostexamples_merged'
-        ('qa_embedder', 'v3_boostexamples_merged', model, None)
+        # ('qa_embedder', 'v3_boostexamples_merged', model, None)
         # ('qa_embedder', 'v2', model, None)
         # for model in [MIST7B, LLAMA8B, LLAMA8B_fewshot]
-        for model in ['ensemble2']  # , LLAMA8B, LLAMA70B]
+        # for model in ['ensemble2']  # , LLAMA8B, LLAMA70B]
     ]
     +
     # qa 70B
@@ -85,6 +86,17 @@ params_coupled_dict = {
         # for version in ['v3_boostexamples']
         # for model in [LLAMA70B]
     ]
+    +
+    # qa agentic test 
+    [
+        # ensemble1
+        # questions: v4, v5, v6, v4_boostexamples, v1, v2, v3_boostexamples, v3, 'v3_boostexamples_merged'
+        ('qa_embedder', 'v1', model, None)
+        # ('qa_embedder', 'v2', model, None)
+        # for model in [MIST7B, LLAMA8B, LLAMA8B_fewshot]
+        for model in [MIST7B, LLAMA8B, LLAMA8B_fewshot, LLAMA70B, 'Qwen/Qwen3-8B', 'mistralai/Ministral-8B-Instruct-2410',]  # , LLAMA8B, LLAMA70B]
+    ]
+
 
 
     ####################
@@ -116,8 +128,8 @@ submit_utils.run_args_list(
     args_list,
     script_name=script_name,
     unique_seeds='seed_stories',
-    amlt_kwargs=amlt_kwargs_cpu,
-    # n_cpus=8,
+    # amlt_kwargs=amlt_kwargs_cpu,
+    n_cpus=8,
     # actually_run=False,
     repeat_failed_jobs=True,
     shuffle=True,

@@ -35,7 +35,7 @@ params_shared_dict = {
     # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/may27'],
     # 'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jun8'],
     'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul12_2025'],
-    # 'seed_stories': range(4),
+    # 'seed_stories': range(9, 12),
 }
 
 params_coupled_dict = {
@@ -67,8 +67,9 @@ params_coupled_dict = {
         # for model in [MIST7B, LLAMA8B, LLAMA8B_fewshot]
         # for model in [LLAMA8B_fewshot]
         # for model in [LLAMA70B]
-        # for model in ['Qwen/Qwen3-8B']
-        for model in ['Qwen/Qwen3-8B', 'google/gemma-2-9b-it', 'mistralai/Ministral-8B-Instruct-2410',]
+        # for model in ['google/gemma-2-9b-it']
+        # for model in ['Qwen/Qwen3-8B', 'google/gemma-2-9b-it', 'mistralai/Ministral-8B-Instruct-2410',]
+        for model in ['Qwen/Qwen3-8B', 'mistralai/Ministral-8B-Instruct-2410',]
     ]
 
     # let's just skip llama 7B/8B
@@ -92,6 +93,9 @@ amlt_kwargs = {
     # change this to run a cpu job
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
     'sku': 'G1-A100',
+    # 'target___name': 'msrresrchvc',
+    'target___name': 'msroctovc',
+
     # [64G16-MI200-IB-xGMI, 64G16-MI200-xGMI
     # 'sku': '64G8-MI200-xGMI',
     # 'sku': '64G4-MI200-xGMI',
