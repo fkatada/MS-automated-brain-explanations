@@ -270,7 +270,8 @@ def run_pipeline(args, r):
         r['corrs_test'] = evaluate_pc_model_on_each_voxel(
             args, stim_test_delayed, resp_test,
             model_params_to_save, pca, scaler_test, args.predict_subset)
-        # model_params_to_save['pca'] = pca
+        r['corrs_tune_pc_mean_weighted_by_explained_var'] = np.sum(
+            pca.explained_variance_ratio_[:args.pc_components] * r['corrs_tune_pc'])
         model_params_to_save['scaler_test'] = scaler_test
         model_params_to_save['scaler_train'] = scaler_train
 
