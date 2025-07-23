@@ -70,7 +70,7 @@ def get_selected_coef(args, feature_selection_stability_seeds: int, seed: int,
         m = MultiTaskElasticNet(
             alpha=args.feature_selection_alpha,
             l1_ratio=0.9,
-            max_iter=5000,
+            max_iter=args.feature_selection_max_iter,
             random_state=seed,
         ).fit(stim_train, resp_train_shared)
         coef_enet = m.coef_

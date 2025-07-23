@@ -32,6 +32,13 @@ storage:
     container_name: cs1
     mount_dir: /mntv1 # dir on the local machine
 
+
+# 10C3  # 4 cores, 30 GBs mem
+# 8C7   # 8 cores, 56 GBs mem
+# 8C15  # 15 cores, 120 GBs mem
+# 8C30  # 30 cores, 240 GBs mem
+# 8C60  # 60 cores, 480 GBs mem
+
 # sku: 64G2-MI200-xGMI # options [64G16-MI200-IB-xGMI, 64G16-MI200-xGMI, 64G8-MI200-xGMI, 64G4-MI200-xGMI 64G2-MI200-xGMI]
 # jobs:
 # - name: run_fmri

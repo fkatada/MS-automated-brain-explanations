@@ -3,6 +3,7 @@ import logging
 import os
 import os.path
 import random
+from os.path import expanduser
 import time
 from collections import defaultdict
 from copy import deepcopy
@@ -12,9 +13,9 @@ import imodelsx.cache_save_utils
 import joblib
 import numpy as np
 import torch
-from sklearn.ensemble import RandomForestRegressor
 from tqdm import tqdm
 
+import neuro.agent
 import neuro.data.story_names as story_names
 from neuro.data import response_utils
 from neuro.encoding.eval import (
@@ -85,6 +86,11 @@ def add_main_args(parser):
                         default=0.5,
                         help='''Randomly bootstraps data to this fraction of examples.
                         Applies if feature_selection_alpha >= 0.''')
+    parser.add_argument("--feature_selection_max_iter", type=int,
+                        default=5000,
+                        help='''Number of iterations to use for elasticnet feateure selection
+                        Applies if feature_selection_alpha >= 0.
+                        ''')
     parser.add_argument("--feature_selection_stability_seeds", type=int,
                         default=-1,
                         help='''Number of seeds to use for stability selection (only keeps a feature if it was selected in all seeds).
@@ -348,22 +354,23 @@ if __name__ == "__main__":
 
 
     elif args.feature_space == 'qa_agent':
+        lm = imodelsx.llm.get_llm('gpt-4o', CACHE_DIR=expanduser('~/.CACHE_LLM/neuro_agent'))
         for epoch in range(args.num_agent_epochs):
 
-            logging.info(f"Running agent epoch {epoch + 1}/{args.num_agent_epochs}")
-            r['epoch'].append(epoch + 1)
-            r['questions_list'].append(args.qa_questions_version)
+            logging.info(f"Running agent epoch {epoch + 1}/{args.num_agent_epochs}")            
+            if epoch == 0:
+                questions_list = neuro.agent.brainstorm_init_questions(lm, args)
 
-            questions_init = ['Does the sentence describe a personal reflection or thought?',
-    'Does the sentence contain a proper noun?',
-    'Does the sentence describe a physical action?',]
-            args.qa_questions_version = questions_init
+            print('questions_list', '\n'.join(questions_list))
+
+            r['epoch'].append(epoch + 1)
+            r['questions_list'].append(questions_list)
+            args.qa_questions_version = questions_list
             r, model_params_to_save = run_pipeline(args, r)
 
-            # modify the questions
-            args.qa_questions_version = ['Does the sentence involve the mention of a specific object or item?',
-    'Does the sentence involve a description of physical environment or setting?',
-    'Does the sentence describe a relationship between people?']
+            questions_list = neuro.agent.reselect_questions(lm, args, questions_list)
+
+            args.qa_questions_version = questions_list
 
 
 

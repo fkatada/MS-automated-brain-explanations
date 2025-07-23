@@ -1,5 +1,4 @@
 
-# %%
 import os
 import sys
 from os.path import dirname, expanduser, join
@@ -35,8 +34,10 @@ params_shared_dict = {
 
 
     # specific subsets
-    'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
+    'predict_subset': ['all', 'prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
     'seed': range(1),
+    'feature_selection_frac': [1],
+    'feature_selection_max_iter': [1000],
 
     # second, we can use selected features to fit ridge #######################################
     # 'ndelays': [4, 8],
@@ -55,14 +56,21 @@ params_shared_dict = {
 params_coupled_dict = {
     ('feature_space', 'qa_questions_version', 'qa_embedding_model', 'feature_selection_alpha'):
     [
-        ('qa_embedder', 'v3_boostexamples_merged', 'ensemble2', alpha)
+        # ('qa_embedder', 'v3_boostexamples_merged', 'ensemble2', alpha)
         # note, would run all of them when not picking subset
-        for alpha in get_alphas('qa_embedder')[1:-3]
+        # for alpha in get_alphas('qa_embedder')[1:-3]
     ]
     +
     [
         # ('eng1000', None, None, alpha)
         # for alpha in get_alphas('eng1000')
+    ]
+    +
+    [
+        # agent setting uses just llama instead of ensemble and v3 instead of v3_boostexamples_merged
+        ('qa_embedder', 'v3', 'meta-llama/Meta-Llama-3-8B-Instruct', alpha)
+        # note, would run all of them when not picking subset
+        for alpha in get_alphas('qa_embedder')[1:-3]
     ],
 }
 # Args list is a list of dictionaries
@@ -72,24 +80,17 @@ args_list = submit_utils.get_args_list(
     params_coupled_dict=params_coupled_dict,
 )
 script_name = join(repo_dir, 'experiments', '02_fit_encoding.py')
-# amlt_kwargs = {
-#     # 'amlt_file': join(repo_dir, 'scripts', 'launch_cpu.yaml'),
-#     # 'sku': 'E4ads_v5',
-#     # 'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
-#     'amlt_file': join(repo_dir, 'launch.yaml'),  # change this to run a cpu job
-#     'sku': '64G2-MI200-xGMI',
-#     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
-# }
 amlt_kwargs = {
-    'amlt_file': join(repo_dir, 'scripts', 'launch_cpu.yaml'),
+    'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
     'sku': '8C15',
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
+    'target___name': 'msrresrchvc',
 }
 submit_utils.run_args_list(
     args_list,
     script_name=script_name,
     # amlt_kwargs=amlt_kwargs,
-    n_cpus=4,
+    # n_cpus=4,
     # n_cpus=2,
     # gpu_ids=[0, 1, 2, 3],
     # actually_run=False,
