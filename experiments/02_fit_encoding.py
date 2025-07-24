@@ -21,6 +21,7 @@ from neuro.data import response_utils
 from neuro.encoding.eval import (
     add_summary_stats,
     evaluate_pc_model_on_each_voxel,
+    explained_var_over_targets_and_delays,
     nancorr,
 )
 from neuro.encoding.fit import fit_regression
@@ -281,6 +282,16 @@ def run_pipeline(args, r):
         model_params_to_save['scaler_test'] = scaler_test
         model_params_to_save['scaler_train'] = scaler_train
 
+        if args.feature_space == 'qa_agent':
+            resp_train = response_utils.load_response_wrapper(
+                args, story_names_train, args.subject)
+            r['feature_importances_var_explained'] = explained_var_over_targets_and_delays(
+                args, stim_train_delayed, resp_train, model_params_to_save)
+            r['feature_importances_var_explained_norm'] = r['feature_importances_var_explained'] / \
+                np.sum(np.abs(r['feature_importances_var_explained']))
+            stim_train_mini = stim_train_delayed[:10000, :len(args.qa_questions_version)]
+            r['feature_correlations'] = np.corrcoef(stim_train_mini, rowvar=False)
+
         # compute weighted corrs_tune_pc
         # explained_var_weight = pca.explained_variance_[:args.pc_components]
         # explained_var_weight = explained_var_weight / \
@@ -359,18 +370,15 @@ if __name__ == "__main__":
 
             logging.info(f"Running agent epoch {epoch + 1}/{args.num_agent_epochs}")            
             if epoch == 0:
-                questions_list = neuro.agent.brainstorm_init_questions(lm, args)
+                args.qa_questions_version = neuro.agent.brainstorm_init_questions(lm, args)
 
-            print('questions_list', '\n'.join(questions_list))
+            print('questions_list', '\n'.join(args.qa_questions_version))
 
             r['epoch'].append(epoch + 1)
-            r['questions_list'].append(questions_list)
-            args.qa_questions_version = questions_list
+            r['questions_list'].append(args.qa_questions_version)
             r, model_params_to_save = run_pipeline(args, r)
 
-            questions_list = neuro.agent.reselect_questions(lm, args, questions_list)
-
-            args.qa_questions_version = questions_list
+            args.qa_questions_version = neuro.agent.update_questions(lm, args, args.qa_questions_version)
 
 
 

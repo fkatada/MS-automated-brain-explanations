@@ -23,6 +23,7 @@ def evaluate_pc_model_on_each_voxel(
             scaler.scale_ @ pca.components_
         model_params_to_save['bias'] = scaler.mean_ @ pca.components_ + pca.mean_
         # note: prediction = stim @ weights + bias
+        # bias is optional, is really just zero
     elif args.encoding_model in ['tabpfn']:
         preds_pc = model_params_to_save['preds_pc']
         preds_pc = np.array(preds_pc).T
@@ -44,6 +45,106 @@ def evaluate_pc_model_on_each_voxel(
     corrs = np.array(corrs)
     corrs[np.isnan(corrs)] = 0
     return corrs
+
+def explained_variance_per_feature(X, y, w, intercept=0.0, method="lofo"):
+    """
+    Compute per‑feature explained variance for an already‑fit Ridge (or any linear) model.
+    
+    Parameters
+    ----------
+    X : (n_samples, n_features) array_like
+        Design matrix used to train the model.
+    y : (n_samples,) array_like
+        Target vector.
+    w : (n_features,) array_like
+        Learned weight vector.
+    intercept : float, default 0.0
+        Intercept term of the model.
+    method : {"lofo", "variance", "covariance"}
+        - "lofo"      : ΔR² when feature j is left out (unique importance).
+        - "variance"  : Var(X_j w_j) / Var(y)  (assumes X columns are centred & mutually
+                         uncorrelated).
+        - "covariance": w_j * Cov(X_j, y) / Var(y) (can be negative).
+    
+    Returns
+    -------
+    contrib : (n_features,) ndarray
+        Explained‑variance contribution for each feature.
+    """
+    X = np.asarray(X)
+    y = np.asarray(y).ravel()
+    w = np.asarray(w).ravel()
+    
+    var_y = np.var(y, ddof=0)
+    if var_y == 0:
+        raise ValueError("y has zero variance.")
+    
+    # Common helper: full‑model predictions & R²
+    y_hat_full = intercept + X @ w
+    r2_full = 1 - np.var(y - y_hat_full, ddof=0) / var_y
+    
+    if method == "lofo":
+        contrib = np.empty_like(w, dtype=float)
+        for j in range(len(w)):
+            y_hat_minus_j = y_hat_full - X[:, j] * w[j]
+            r2_minus_j = 1 - np.var(y - y_hat_minus_j, ddof=0) / var_y
+            contrib[j] = r2_full - r2_minus_j
+        return contrib
+    
+    if method == "variance":
+        # Ensure X columns are centred; otherwise centre them here.
+        var_hat_j = np.var(X * w, axis=0, ddof=0)      # element‑wise product
+        return var_hat_j / var_y
+    
+    if method == "covariance":
+        y_centered = y - y.mean()
+        cov_j = (X * (y_centered[:, None])).mean(axis=0)   # Cov(X_j, y)
+        return w * cov_j / var_y
+    
+    raise ValueError("method must be 'lofo', 'variance', or 'covariance'")
+
+
+def explained_var_over_targets_and_delays(args, stim, resp, model_params_to_save):
+    """
+    stim: (n_samples, n_features * args.ndelays)
+    resp: (n_samples, n_targets)
+    W: (n_features * args.ndelays, n_targets)
+
+    Returns:
+        mean_var_explained: (n_features,)
+    """
+    logging.info("Computing explained variance per feature over targets and delays...")
+    # check stim shape
+    n_weights = stim.shape[1]
+    n_questions = len(args.qa_questions_version)
+    assert n_weights == n_questions * args.ndelays, \
+        f"stim.shape[1] ({stim.shape[1]}) != n_questions * args.ndelays ({n_questions * args.ndelays})"
+    
+    # select voxels to evaluate
+    if not args.predict_subset == 'all':
+        idxs_mask = neuro.flatmaps_helper.load_custom_rois(
+            args.subject.replace('UT', ''), '_lobes')[args.predict_subset]
+        vox_idxs = np.where(idxs_mask)[0]
+    else:
+        vox_idxs = range(resp.shape[1])
+    n_targets = len(vox_idxs)
+
+    # setup pred for each target
+    var_explained = np.zeros((n_targets, n_weights))
+    for i, i_single_vox in enumerate(vox_idxs):
+        y_single_vox = resp[:, i_single_vox]
+        
+        # Covariance of each feature's contribution with total prediction
+        w_single_vox = model_params_to_save['weights'][:, i_single_vox]
+        var_explained[i] = explained_variance_per_feature(
+                stim, y_single_vox, w_single_vox, method='covariance',
+        )
+        
+    # average over delays
+    var_explained = var_explained.reshape(n_targets, args.ndelays, n_questions)
+    mean_var_explained = var_explained.mean(axis=0).mean(axis=0)
+
+    return mean_var_explained
 
 
 def add_summary_stats(r, verbose=True):

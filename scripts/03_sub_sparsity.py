@@ -62,15 +62,15 @@ params_coupled_dict = {
     ]
     +
     [
-        # ('eng1000', None, None, alpha)
-        # for alpha in get_alphas('eng1000')
+        ('eng1000', None, None, alpha)
+        for alpha in get_alphas('eng1000')
     ]
     +
     [
         # agent setting uses just llama instead of ensemble and v3 instead of v3_boostexamples_merged
-        ('qa_embedder', 'v3', 'meta-llama/Meta-Llama-3-8B-Instruct', alpha)
+        # ('qa_embedder', 'v3', 'meta-llama/Meta-Llama-3-8B-Instruct', alpha)
         # note, would run all of them when not picking subset
-        for alpha in get_alphas('qa_embedder')[1:-3]
+        # for alpha in get_alphas('qa_embedder')[1:-3]
     ],
 }
 # Args list is a list of dictionaries
@@ -82,14 +82,15 @@ args_list = submit_utils.get_args_list(
 script_name = join(repo_dir, 'experiments', '02_fit_encoding.py')
 amlt_kwargs = {
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
-    'sku': '8C15',
+    'sku': '8C7',
+    # 'sku': '8C15',
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
     'target___name': 'msrresrchvc',
 }
 submit_utils.run_args_list(
-    args_list,
+    args_list[1:],
     script_name=script_name,
-    # amlt_kwargs=amlt_kwargs,
+    amlt_kwargs=amlt_kwargs,
     # n_cpus=4,
     # n_cpus=2,
     # gpu_ids=[0, 1, 2, 3],

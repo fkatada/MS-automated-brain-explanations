@@ -39,30 +39,37 @@ def _extract_python_list_from_str(questions_list_str: str) -> List[str]:
 def brainstorm_init_questions(lm, args) -> List[str]:
     PROMPT = f"""
 You are a scientific agent tasked with generating useful questions for predicting fMRI responses to natural language stimuli.
-
 {f'Specifically, you are predicting fMRI responses to the {args.predict_subset} cortex.' if not args.predict_subset == 'all' else ''}.
 
 Brainstorm some questions that could be useful.
-
 Return a python list of strings and nothing else. Each question should start with "Does the input" and end with "?".
-
 Example: ['Does the input mention a location?', 'Does the input mention time?', 'Does the input contain a proper noun?']
 """.strip()
     questions_list_str = lm(PROMPT, max_completion_tokens=1000, temperature=0)
     return _extract_python_list_from_str(questions_list_str)
 
-def reselect_questions(lm, args, questions_list) -> List[str]:
+def format_str_list_as_bullet_point_str(questions_list: List[str]) -> str:
+    """Format a list of strings as bullet points."""
+    return '\n'.join(f"- {question}" for question in questions_list)
+
+def update_questions(lm, args, questions_list) -> List[str]:
     PROMPT = f"""
 You are a scientific agent tasked with generating useful questions for predicting fMRI responses to natural language stimuli.
 {f'Specifically, you are predicting fMRI responses to the {args.predict_subset} cortex.' if not args.predict_subset == 'all' else ''}.
 
-Here are the previous questions tested by the agent: {questions_list}
+Here are the previous questions that have been tested, along with their importance (higher is more important):
+{format_str_list_as_bullet_point_str(questions_list)}
 
-Brainstorm some more questions that could be useful and drop any that do not seem useful.
-
+Extend and revise this list of questions with more questions that could be useful.
+Merge questions that seem too similar.
+Add new questions that capture potentially missing aspects.
+Do not needlessly reword existing questions.
+Output at least as many questions as there are in the input list, likely exactly repeating at least some of the questions.
 Return a python list of strings and nothing else. Each question should start with "Does the input" and end with "?".
-
 Example: ['Does the input mention a location?', 'Does the input mention time?', 'Does the input contain a proper noun?']
 """.strip()
     questions_list_str = lm(PROMPT, max_completion_tokens=1000, temperature=0)
-    return _extract_python_list_from_str(questions_list_str)
+    questions_list = _extract_python_list_from_str(questions_list_str)
+    assert all(q.startswith('Does the input') and q.endswith('?') for q in questions_list), \
+        "All questions must start with 'Does the input' and end with '?'"
+    return questions_list
