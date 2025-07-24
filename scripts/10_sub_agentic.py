@@ -17,7 +17,7 @@ params_shared_dict = {
     'qa_embedding_model': ['meta-llama/Meta-Llama-3-8B-Instruct'],
 
 
-    'subject': [f'UTS0{k}' for k in range(1, 4)],
+    # 'subject': [f'UTS0{k}' for k in range(1, 4)],
     'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul24_2025_agentic_test'],
 
     # 16 is good for 8B model with 45 GB
@@ -45,15 +45,19 @@ amlt_kwargs = {
 
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
 }
+if 'chansingh' in expanduser('~'):
+    cmd_python = 'python'
+else:
+    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; .venv/bin/python'
 submit_utils.run_args_list(
     args_list,
     script_name=script_name,
     unique_seeds='seed_stories',
-    amlt_kwargs=amlt_kwargs,
+    # amlt_kwargs=amlt_kwargs,
     # n_cpus=8,
     # actually_run=False,
-    # gpu_ids=[[0, 1]],
+    gpu_ids=[[2, 3]],
     repeat_failed_jobs=True,
     shuffle=True,
-    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; .venv/bin/python',
+    cmd_python=cmd_python,
 )

@@ -125,8 +125,14 @@ def add_main_args(parser):
                         help='If passed, only use this question index for QA features')
 
     # agent features
+    parser.add_argument("--agent_checkpoint", type=str, default='gpt-4o', choices=['gpt-4o', 'o4-mini'],
+                        help='Checkpoint to use for agent (if feature_space is qa_agent)')
     parser.add_argument("--num_agent_epochs", type=int, default=5,
                         help='Number of epochs to train the agent for (if feature_space is qa_agent)')
+    parser.add_argument('--topk_agent_errors', type=int, default=100,
+                        help='Number of top errors to use for agent revisions (if feature_space is qa_agent')
+    parser.add_argument('--topk_agent_correlated_questions', type=int, default=15,
+                        help='Number of top correlated questions to use for agent revisions (if feature_space is qa_agent)')
 
     # linear modeling
     parser.add_argument("--encoding_model", type=str,
@@ -365,12 +371,9 @@ if __name__ == "__main__":
         print(
             f"Succesfully completed in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
 
-
-
     elif args.feature_space == 'qa_agent':
         lm = imodelsx.llm.get_llm(
-            # 'o4-mini',
-            'gpt-4o',
+            args.agent_checkpoint,
             CACHE_DIR=expanduser('~/.CACHE_LLM/neuro_agent'))
         for epoch in range(args.num_agent_epochs):
 
@@ -385,8 +388,6 @@ if __name__ == "__main__":
             r, model_params_to_save = run_pipeline(args, r)
 
             args.qa_questions_version = neuro.agent.update_questions(lm, args, args.qa_questions_version, r)
-
-
 
             # save results
             qs_sort_idx = np.argsort(np.array(r['feature_importances_var_explained']))[::-1]
