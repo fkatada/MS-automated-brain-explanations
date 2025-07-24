@@ -22,6 +22,7 @@ from neuro.encoding.eval import (
     add_summary_stats,
     evaluate_pc_model_on_each_voxel,
     explained_var_over_targets_and_delays,
+    get_ngrams_top_errors_df,
     nancorr,
 )
 from neuro.encoding.fit import fit_regression
@@ -292,6 +293,8 @@ def run_pipeline(args, r):
             stim_train_mini = stim_train_delayed[:10000, :len(args.qa_questions_version)]
             r['feature_correlations'] = np.corrcoef(stim_train_mini, rowvar=False)
 
+            r['error_ngrams_df'] = get_ngrams_top_errors_df(story_names_train, stim_train_delayed, resp_train_voxel, model_params_to_save)
+
         # compute weighted corrs_tune_pc
         # explained_var_weight = pca.explained_variance_[:args.pc_components]
         # explained_var_weight = explained_var_weight / \
@@ -365,7 +368,10 @@ if __name__ == "__main__":
 
 
     elif args.feature_space == 'qa_agent':
-        lm = imodelsx.llm.get_llm('gpt-4o', CACHE_DIR=expanduser('~/.CACHE_LLM/neuro_agent'))
+        lm = imodelsx.llm.get_llm(
+            # 'o4-mini',
+            'gpt-4o',
+            CACHE_DIR=expanduser('~/.CACHE_LLM/neuro_agent'))
         for epoch in range(args.num_agent_epochs):
 
             logging.info(f"Running agent epoch {epoch + 1}/{args.num_agent_epochs}")            

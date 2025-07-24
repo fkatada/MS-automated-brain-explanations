@@ -19,3 +19,5 @@ notebooks*
 data/decoding
 data/d3
 data/**.txt
+scripts/**.py
+docs

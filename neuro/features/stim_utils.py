@@ -47,7 +47,7 @@ def load_story_wordseqs_brain_drive(stories) -> Dict[str, DataSequence]:
     return wordseqs
 
 
-def load_story_wordseqs_wrapper(stories, use_huge, use_brain_drive):
+def load_story_wordseqs_wrapper(stories, use_brain_drive):
     wordseqs = load_story_wordseqs_huge(stories)
     # print('stories', stories, 'ks')
     if use_brain_drive or any([s.startswith('GenStory') for s in stories]):

@@ -174,40 +174,39 @@ def get_gpt4_qa_embs_cached(
     else:
         return embs
 
+def _get_ngrams_list_from_words_list(words_list: List[str], ngram_size: int = 5) -> List[str]:
+    """Concatenate running list of words into grams with spaces in between
+    """
+    ngrams_list = []
+    for i in range(len(words_list)):
+        l = max(0, i - ngram_size)
+        ngram = ' '.join(words_list[l: i + 1])
+        ngrams_list.append(ngram.strip())
+    return ngrams_list
+
+def _get_ngrams_list_from_chunks(chunks, num_trs=2):
+    ngrams_list = []
+    for i in range(len(chunks)):
+        chunk_block = chunks[i - num_trs:i]
+        if len(chunk_block) == 0:
+            ngrams_list.append('')
+        else:
+            chunk_block = np.concatenate(chunk_block)
+            ngrams_list.append(' '.join(chunk_block))
+    return ngrams_list
+
+def _get_ngrams_list_from_words_list_and_times(words_list: List[str], times_list: np.ndarray[float], sec_offset: float = 4) -> List[str]:
+    words_arr = np.array(words_list)
+    ngrams_list = []
+    for i in range(len(times_list)):
+        t = times_list[i]
+        t_off = t - sec_offset
+        idxs = np.where(np.logical_and(
+            times_list >= t_off, times_list <= t))[0]
+        ngrams_list.append(' '.join(words_arr[idxs]))
+    return ngrams_list
 
 def get_ngrams_list_main(ds, num_trs_context=None, num_secs_context_per_word=None, num_ngrams_context=None) -> List[str]:
-    def _get_ngrams_list_from_words_list(words_list: List[str], ngram_size: int = 5) -> List[str]:
-        """Concatenate running list of words into grams with spaces in between
-        """
-        ngrams_list = []
-        for i in range(len(words_list)):
-            l = max(0, i - ngram_size)
-            ngram = ' '.join(words_list[l: i + 1])
-            ngrams_list.append(ngram.strip())
-        return ngrams_list
-
-    def _get_ngrams_list_from_chunks(chunks, num_trs=2):
-        ngrams_list = []
-        for i in range(len(chunks)):
-            chunk_block = chunks[i - num_trs:i]
-            if len(chunk_block) == 0:
-                ngrams_list.append('')
-            else:
-                chunk_block = np.concatenate(chunk_block)
-                ngrams_list.append(' '.join(chunk_block))
-        return ngrams_list
-
-    def _get_ngrams_list_from_words_list_and_times(words_list: List[str], times_list: np.ndarray[float], sec_offset: float = 4) -> List[str]:
-        words_arr = np.array(words_list)
-        ngrams_list = []
-        for i in range(len(times_list)):
-            t = times_list[i]
-            t_off = t - sec_offset
-            idxs = np.where(np.logical_and(
-                times_list >= t_off, times_list <= t))[0]
-            ngrams_list.append(' '.join(words_arr[idxs]))
-        return ngrams_list
-
     # get ngrams_list
     if num_trs_context is not None:
         # replace each TR with text from the current TR and the TRs immediately before it
@@ -411,7 +410,7 @@ def get_features(args, feature_space, **kwargs):
     kwargs_extra = _get_kwargs_extra(args)
     logging.info('getting wordseqs..')
     wordseqs = load_story_wordseqs_wrapper(
-        kwargs['story_names'], kwargs['use_huge'], kwargs['use_brain_drive'])
+        kwargs['story_names'], kwargs['use_brain_drive'])
 
     if feature_space == 'eng1000':
         return get_eng1000_vectors(wordseqs, **kwargs)
@@ -436,6 +435,6 @@ if __name__ == "__main__":
     }
     logging.basicConfig(level=logging.INFO)
     wordseqs = load_story_wordseqs_wrapper(
-        kwargs['story_names'], kwargs['use_huge'], kwargs['use_brain_drive'])
+        kwargs['story_names'], kwargs['use_brain_drive'])
     llm_vecs = get_llm_vectors(
         wordseqs, **kwargs)

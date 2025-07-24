@@ -55,5 +55,5 @@ submit_utils.run_args_list(
     # gpu_ids=[[0, 1]],
     repeat_failed_jobs=True,
     shuffle=True,
-    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; python',
+    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; .venv/bin/python',
 )

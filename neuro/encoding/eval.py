@@ -1,9 +1,14 @@
 
+from collections import defaultdict
 import logging
 
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
 import neuro.flatmaps_helper
+import neuro.features.feature_spaces
+import neuro.features.stim_utils
 
 
 def nancorr(x, y):
@@ -104,9 +109,9 @@ def explained_variance_per_feature(X, y, w, intercept=0.0, method="lofo"):
     raise ValueError("method must be 'lofo', 'variance', or 'covariance'")
 
 
-def explained_var_over_targets_and_delays(args, stim, resp, model_params_to_save):
+def explained_var_over_targets_and_delays(args, stim_train_delayed, resp, model_params_to_save):
     """
-    stim: (n_samples, n_features * args.ndelays)
+    stim_train_delayed: (n_samples, n_features * args.ndelays)
     resp: (n_samples, n_targets)
     W: (n_features * args.ndelays, n_targets)
 
@@ -115,10 +120,10 @@ def explained_var_over_targets_and_delays(args, stim, resp, model_params_to_save
     """
     logging.info("Computing explained variance per feature over targets and delays...")
     # check stim shape
-    n_weights = stim.shape[1]
+    n_weights = stim_train_delayed.shape[1]
     n_questions = len(args.qa_questions_version)
     assert n_weights == n_questions * args.ndelays, \
-        f"stim.shape[1] ({stim.shape[1]}) != n_questions * args.ndelays ({n_questions * args.ndelays})"
+        f"stim.shape[1] ({stim_train_delayed.shape[1]}) != n_questions * args.ndelays ({n_questions * args.ndelays})"
     
     # select voxels to evaluate
     if not args.predict_subset == 'all':
@@ -137,7 +142,7 @@ def explained_var_over_targets_and_delays(args, stim, resp, model_params_to_save
         # Covariance of each feature's contribution with total prediction
         w_single_vox = model_params_to_save['weights'][:, i_single_vox]
         var_explained[i] = explained_variance_per_feature(
-                stim, y_single_vox, w_single_vox, method='covariance',
+                stim_train_delayed, y_single_vox, w_single_vox, method='covariance',
         )
         
     # average over delays
@@ -146,6 +151,34 @@ def explained_var_over_targets_and_delays(args, stim, resp, model_params_to_save
 
     return mean_var_explained
 
+def get_ngrams_top_errors_df(story_names, stim_delayed, resp, model_params_to_save, num_top_errors = 300):
+    errors_dict = defaultdict(list)
+    wordseqs = neuro.features.stim_utils.load_story_wordseqs_huge(story_names)
+    ngrams_list_total = []
+    for story_name in tqdm(story_names):
+        # ngram for 3 trs preceding the current TR
+        chunks = wordseqs[story_name].chunks()
+        ngrams_list = neuro.features.feature_spaces._get_ngrams_list_from_chunks(
+            chunks, num_trs=3)
+        ngrams_list = np.array(ngrams_list[10:-5])
+        ngrams_list_total.extend(ngrams_list)
+
+    preds = stim_delayed @ model_params_to_save['weights']
+
+    # calculate correlation at each timepoint
+    corrs_time = np.array([np.corrcoef(resp[i, :], preds[i, :])[0, 1]
+                        for i in range(resp.shape[0])])
+    corrs_time[:10] = 100  # don't pick first 10 TRs
+    corrs_time[-10:] = 100  # don't pick last 10 TRs
+    
+    # get worst idxs
+    corrs_worst_idxs = np.argsort(corrs_time)[:num_top_errors]        
+    for i in range(num_top_errors):
+        errors_dict['corrs'].append(corrs_time[corrs_worst_idxs[i]])
+        errors_dict['ngram'].append(ngrams_list_total[corrs_worst_idxs[i]])
+        errors_dict['tr'].append(corrs_worst_idxs[i])
+
+    return pd.DataFrame(errors_dict)
 
 def add_summary_stats(r, verbose=True):
     for key in ['corrs_test', 'corrs_tune', 'corrs_tune_pc', 'corrs_test_pc', 'corrs_brain_drive']:
