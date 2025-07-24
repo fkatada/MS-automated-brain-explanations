@@ -124,7 +124,7 @@ def add_main_args(parser):
                         help='If passed, only use this question index for QA features')
 
     # agent features
-    parser.add_argument("--num_agent_epochs", type=int, default=3,
+    parser.add_argument("--num_agent_epochs", type=int, default=5,
                         help='Number of epochs to train the agent for (if feature_space is qa_agent)')
 
     # linear modeling
@@ -283,10 +283,10 @@ def run_pipeline(args, r):
         model_params_to_save['scaler_train'] = scaler_train
 
         if args.feature_space == 'qa_agent':
-            resp_train = response_utils.load_response_wrapper(
+            resp_train_voxel = response_utils.load_response_wrapper(
                 args, story_names_train, args.subject)
             r['feature_importances_var_explained'] = explained_var_over_targets_and_delays(
-                args, stim_train_delayed, resp_train, model_params_to_save)
+                args, stim_train_delayed, resp_train_voxel, model_params_to_save)
             r['feature_importances_var_explained_norm'] = r['feature_importances_var_explained'] / \
                 np.sum(np.abs(r['feature_importances_var_explained']))
             stim_train_mini = stim_train_delayed[:10000, :len(args.qa_questions_version)]
@@ -378,11 +378,13 @@ if __name__ == "__main__":
             r['questions_list'].append(args.qa_questions_version)
             r, model_params_to_save = run_pipeline(args, r)
 
-            args.qa_questions_version = neuro.agent.update_questions(lm, args, args.qa_questions_version)
+            args.qa_questions_version = neuro.agent.update_questions(lm, args, args.qa_questions_version, r)
 
 
 
             # save results
+            qs_sort_idx = np.argsort(np.array(r['feature_importances_var_explained']))[::-1]
+            
             os.makedirs(save_dir_unique, exist_ok=True)
             joblib.dump(r, join(save_dir_unique, "results.pkl"))
             if args.encoding_model == 'ridge':

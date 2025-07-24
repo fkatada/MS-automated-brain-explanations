@@ -48,17 +48,47 @@ Example: ['Does the input mention a location?', 'Does the input mention time?', 
     questions_list_str = lm(PROMPT, max_completion_tokens=1000, temperature=0)
     return _extract_python_list_from_str(questions_list_str)
 
-def format_str_list_as_bullet_point_str(questions_list: List[str]) -> str:
+def _format_str_list_as_bullet_point_str(questions_list: List[str]) -> str:
     """Format a list of strings as bullet points."""
     return '\n'.join(f"- {question}" for question in questions_list)
 
-def update_questions(lm, args, questions_list) -> List[str]:
+def update_questions(lm, args, questions_list: List[str], r) -> List[str]:
+    questions_arr = np.array(questions_list)
+    qs_sort_idx = np.argsort(np.array(r['feature_importances_var_explained']))[::-1]
+    questions_arr = questions_arr[qs_sort_idx]
+    feature_importances = np.array(r['feature_importances_var_explained'])[qs_sort_idx]
+    
+    # extract topk tuples of questions that have the highest feature correlations from feature correlation matrix
+    feature_correlation_matrix = r['feature_correlations']
+    # set diag & triangle to -1 to avoid self pairs / duplicate pairs
+    feature_correlation_matrix = np.triu(feature_correlation_matrix, k=0)
+    topk = topk_correlations
+    topk_indices = np.unravel_index(np.argsort(feature_correlation_matrix, axis=None)[::-1][:topk], feature_correlation_matrix.shape)
+    topk_correlations = feature_correlation_matrix[topk_indices]
+    topk_questions_with_imp = []
+    for i, j in zip(*topk_indices):
+        if i != j:
+            topk_questions_with_imp.append((questions_list[i], questions_list[j], feature_correlation_matrix[i, j]))
+
+
+
     PROMPT = f"""
 You are a scientific agent tasked with generating useful questions for predicting fMRI responses to natural language stimuli.
 {f'Specifically, you are predicting fMRI responses to the {args.predict_subset} cortex.' if not args.predict_subset == 'all' else ''}.
 
-Here are the previous questions that have been tested, along with their importance (higher is more important):
-{format_str_list_as_bullet_point_str(questions_list)}
+Here are the previous questions that have been tested, along with their feature importance (higher is more important):
+--------------------
+Question, Importance
+--------------------
+{'\n'.join(f"{question}, {importance:.3f}" for question, importance in zip(questions_arr, feature_importances))}
+--------------------
+
+Here are the {topk_correlations} most correlated questions:
+-----------------------------------
+Question 1, Question 2, Correlation
+-----------------------------------
+{'\n'.join(f"{q1}, {q2}, {corr:.2f}" for (q1, q2, corr) in topk_questions_with_imp)}
+-----------------------------------
 
 Extend and revise this list of questions with more questions that could be useful.
 Merge questions that seem too similar.

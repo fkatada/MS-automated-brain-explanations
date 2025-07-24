@@ -48,15 +48,7 @@ script_name = join(repo_dir, 'experiments', '02_fit_encoding.py')
 #     'sku': '64G2-MI200-xGMI',
 #     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
 # }
-amlt_kwargs = {
-    'amlt_file': join(repo_dir, 'scripts', 'launch_cpu.yaml'),
-    # E4ads_v5 (30 GB), E8ads_v5 (56 GB), E16ads_v5 (120GB), E32ads_v5 (240GB), E64ads_v5 (480 GB)
-    'sku': 'E64ads_v5',
-    # 'sku': 'E32ads_v5',
-    # 'sku': 'E16ads_v5',
-    # 'sku': 'E8ads_v5',
-    'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
-}
+amlt_kwargs = {}
 submit_utils.run_args_list(
     args_list,
     script_name=script_name,
