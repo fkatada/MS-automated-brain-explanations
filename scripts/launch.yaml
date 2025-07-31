@@ -2,7 +2,7 @@
 # amlt --pdb run launch.yaml
 # amlt run launch.yaml
 
-description: fMRI embedding extraction
+description: automated-brain-explanations
 environment:
   image: amlt-sing/acpt-torch2.7.0-py3.10-cuda12.6-ubuntu22.04
   # image: amlt-sing/acpt-rocm6.1_ubuntu20.04_py3.9_pytorch2.1.2 # for amd gpus

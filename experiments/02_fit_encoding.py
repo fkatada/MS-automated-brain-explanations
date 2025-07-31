@@ -97,7 +97,7 @@ def add_main_args(parser):
                         default=-1,
                         help='''Number of seeds to use for stability selection (only keeps a feature if it was selected in all seeds).
                         Applies if feature_selection_alpha >= 0.
-                        Note: needs to run feature-selection with this many different seeds (slow, good to run in parallel before calling this)
+                        Note: needs to run feature selection with this many different seeds (slow, good to run in parallel before calling this)
                         ''')
     parser.add_argument("--use_added_wordrate_feature", type=int, default=0,
                         choices=[0, 1], help='Whether to add the wordrate feature')

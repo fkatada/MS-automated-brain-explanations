@@ -76,9 +76,9 @@ def explained_variance_per_feature(X, y, w, intercept=0.0, method="lofo"):
     contrib : (n_features,) ndarray
         Explained‑variance contribution for each feature.
     """
-    X = np.asarray(X)
-    y = np.asarray(y).ravel()
-    w = np.asarray(w).ravel()
+    X = X
+    y = y.ravel()
+    w = w.ravel()
     
     var_y = np.var(y, ddof=0)
     if var_y == 0:
@@ -136,13 +136,13 @@ def explained_var_over_targets_and_delays(args, stim_train_delayed, resp, model_
 
     # setup pred for each target
     var_explained = np.zeros((n_targets, n_weights))
-    for i, i_single_vox in enumerate(vox_idxs):
+    for i, i_single_vox in enumerate(tqdm(vox_idxs)):
         y_single_vox = resp[:, i_single_vox]
         
         # Covariance of each feature's contribution with total prediction
         w_single_vox = model_params_to_save['weights'][:, i_single_vox]
         var_explained[i] = explained_variance_per_feature(
-                stim_train_delayed, y_single_vox, w_single_vox, method='covariance',
+            stim_train_delayed, y_single_vox, w_single_vox, method='covariance',
         )
         
     # average over delays

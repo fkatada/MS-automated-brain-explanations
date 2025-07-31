@@ -17,7 +17,7 @@ params_shared_dict = {
     'qa_embedding_model': ['meta-llama/Meta-Llama-3-8B-Instruct'],
 
 
-    # 'subject': [f'UTS0{k}' for k in range(1, 4)],
+    'subject': [f'UTS0{k}' for k in range(1, 4)],
     'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul24_2025_agentic_test'],
 
     # 16 is good for 8B model with 45 GB
@@ -38,26 +38,24 @@ script_name = join(repo_dir, 'experiments', '02_fit_encoding.py')
 amlt_kwargs = {
     # change this to run a cpu job
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
-    'sku': 'G1-A100',
-    # 'sku': 'G2-A100',
+    # 'sku': 'G1-A100',
+    'sku': 'G2-A100',
     # 'target___name': 'msrresrchvc',
     'target___name': 'msroctovc',
 
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
 }
-if 'chansingh' in expanduser('~'):
-    cmd_python = 'python'
-else:
-    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; .venv/bin/python'
+
 submit_utils.run_args_list(
     args_list,
     script_name=script_name,
     unique_seeds='seed_stories',
-    # amlt_kwargs=amlt_kwargs,
+    amlt_kwargs=amlt_kwargs,
     # n_cpus=8,
     # actually_run=False,
-    gpu_ids=[[2, 3]],
+    # gpu_ids=[[2, 3]],
     repeat_failed_jobs=True,
     shuffle=True,
-    cmd_python=cmd_python,
+    # cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; python',
+    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; .venv/bin/python',
 )

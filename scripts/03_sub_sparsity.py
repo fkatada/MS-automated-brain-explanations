@@ -31,13 +31,24 @@ params_shared_dict = {
     # full
     # 'predict_subset': ['all'],
     # 'seed': range(5),
+    # 'feature_selection_frac': [0.5],
+    # 'feature_selection_max_iter': [5000],
 
 
-    # specific subsets
-    'predict_subset': ['all', 'prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
-    'seed': range(1),
-    'feature_selection_frac': [1],
+    # subsets for agentic single
+    # 'predict_subset': ['all', 'prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
+    # 'seed': range(1),
+    # 'feature_selection_frac': [1],
+    # 'feature_selection_max_iter': [1000],
+
+    # subsets for agentic stab selection (all was already run originally, but with higher feature_selection_frac)
+    'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
+    'seed': range(5),
+    'feature_selection_frac': [0.5],
     'feature_selection_max_iter': [1000],
+
+
+
 
     # second, we can use selected features to fit ridge #######################################
     # 'ndelays': [4, 8],
@@ -68,9 +79,9 @@ params_coupled_dict = {
     +
     [
         # agent setting uses just llama instead of ensemble and v3 instead of v3_boostexamples_merged
-        # ('qa_embedder', 'v3', 'meta-llama/Meta-Llama-3-8B-Instruct', alpha)
+        ('qa_embedder', 'v3', 'meta-llama/Meta-Llama-3-8B-Instruct', alpha)
         # note, would run all of them when not picking subset
-        # for alpha in get_alphas('qa_embedder')[1:-3]
+        for alpha in get_alphas('qa_embedder')[1:-3]
     ],
 }
 # Args list is a list of dictionaries
@@ -87,6 +98,7 @@ amlt_kwargs = {
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
     'target___name': 'msrresrchvc',
 }
+    
 submit_utils.run_args_list(
     args_list[1:],
     script_name=script_name,
@@ -97,5 +109,5 @@ submit_utils.run_args_list(
     # actually_run=False,
     repeat_failed_jobs=True,
     shuffle=True,
-    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; python',
+    cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; .venv/bin/python',
 )

@@ -106,7 +106,7 @@ Return a python list of strings and nothing else.
 Each question should start with "Does the input" and end with "?".
 Example output: ['Does the input mention a location?', 'Does the input mention time?', 'Does the input contain a proper noun?']
 """.strip()
-    questions_list_str = lm(PROMPT, temperature=0)
+    questions_list_str = lm(PROMPT, temperature=0, max_completion_tokens=None)
     questions_list = _extract_python_list_from_str(questions_list_str)
     assert all(q.startswith('Does the input') and q.endswith('?') for q in questions_list), \
         "All questions must start with 'Does the input' and end with '?'"

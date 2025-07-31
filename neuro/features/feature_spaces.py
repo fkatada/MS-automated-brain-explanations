@@ -283,7 +283,7 @@ def get_llm_vectors(
             assert isinstance(qa_questions_version, list), \
                 'qa_questions_version must be a list of questions for qa_agent'
             qa_vecs = {}
-            for i, q in enumerate(tqdm(qa_questions_version)):
+            for i, q in enumerate(qa_questions_version):
                 loaded_from_cache = False
                 args_cache = {'story': story, 'model': qa_embedding_model, 'question': q, 'qa_embedding_model': qa_embedding_model, 'story_gen': 'genstory' in story.lower()}
                 cache_hash = sha256(args_cache)
@@ -300,7 +300,7 @@ def get_llm_vectors(
                         print('Error loading', cache_file)
                 if not loaded_from_cache:
                     logging.info(
-                        f'Computing {story_num}/{len(story_names)}: {story} Q{i}/{len(qa_questions_version)}: {q}')
+                        f'Computing Story{story_num}/{len(story_names)}: {story} Question{i}/{len(qa_questions_version)}: {q}')
                     if embedding_model is None:
                         embedding_model = _get_embedding_model(
                             feature_space, qa_questions_version, qa_embedding_model)
