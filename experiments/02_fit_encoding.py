@@ -345,8 +345,13 @@ if __name__ == "__main__":
         parser, parser_without_computational_args, args, args.save_dir
     )
     if args.use_cache and already_cached and not args.use_test_setup:
-        print("cached version exists! Successfully skipping :)\n\n\n")
-        exit(0)
+        if args.feature_space == 'qa_agent':
+            # try loading and continuining
+            r = joblib.load(join(save_dir_unique, "results.pkl"))
+            n_epochs_run = len(r)
+        else:
+            print("cached version exists! Successfully skipping :)\n\n\n")
+            exit(0)
     for k in sorted(vars(args)):
         print("\t" + k + " " + str(vars(args)[k]))
     logging.info("\n\n\tsaving to " + save_dir_unique + "\n")
@@ -357,10 +362,15 @@ if __name__ == "__main__":
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    r = defaultdict(list)
-    r.update(vars(args))
-    r["git_commit_id"] = imodelsx.cache_save_utils.get_git_commit_id()
-    r["save_dir_unique"] = save_dir_unique
+    # intialize object for saving
+    if 'r' in locals() or 'r' in globals():
+        # if r already exists, we are continuing an agent run
+        pass
+    else:
+        r = defaultdict(list)
+        r.update(vars(args))
+        r["git_commit_id"] = imodelsx.cache_save_utils.get_git_commit_id()
+        r["save_dir_unique"] = save_dir_unique
 
     if args.feature_space != 'qa_agent':
         r, model_params_to_save = run_pipeline(args, r)
@@ -376,27 +386,36 @@ if __name__ == "__main__":
         lm = imodelsx.llm.get_llm(
             args.agent_checkpoint,
             CACHE_DIR=expanduser('~/.CACHE_LLM/neuro_agent'))
-        for epoch in range(args.num_agent_epochs):
+        if isinstance(r, defaultdict):
+            r_epoch = r
+            r_epoch['epoch'] = 0
+            r = []
+        elif isinstance(r, list):
+            r_epoch = r[-1]
+        while r_epoch['epoch'] < args.num_agent_epochs:
 
-            logging.info(f"Running agent epoch {epoch + 1}/{args.num_agent_epochs}")            
-            if epoch == 0:
+            logging.info(f"Running agent epoch {r_epoch['epoch'] + 1}/{args.num_agent_epochs}")
+            if r_epoch['epoch'] == 0:
                 args.qa_questions_version = neuro.agent.brainstorm_init_questions(lm, args)
 
             print('questions_list', '\n'.join(args.qa_questions_version))
 
-            r['epoch'].append(epoch + 1)
-            r['questions_list'].append(args.qa_questions_version)
-            r, model_params_to_save = run_pipeline(args, r)
+            r_epoch['questions_list'] = args.qa_questions_version
+            r_epoch, model_params_to_save = run_pipeline(args, r_epoch)
 
-            args.qa_questions_version = neuro.agent.update_questions(lm, args, args.qa_questions_version, r)
+            args.qa_questions_version = neuro.agent.update_questions(lm, args, args.qa_questions_version, r_epoch)
 
             # save results
-            qs_sort_idx = np.argsort(np.array(r['feature_importances_var_explained']))[::-1]
+            qs_sort_idx = np.argsort(np.array(r_epoch['feature_importances_var_explained']))[::-1]
             
             os.makedirs(save_dir_unique, exist_ok=True)
+            r.append(deepcopy(r_epoch))
             joblib.dump(r, join(save_dir_unique, "results.pkl"))
             if args.encoding_model == 'ridge':
                 joblib.dump(model_params_to_save, join(
                     save_dir_unique, "model_params.pkl"))
             print(
-                f"Succesfully completed epoch {epoch + 1}/{args.num_agent_epochs} in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
+                f"Succesfully completed epoch {r_epoch['epoch'] + 1}/{args.num_agent_epochs} in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
+
+            r_epoch['epoch'] += 1
+

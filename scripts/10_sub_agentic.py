@@ -19,7 +19,7 @@ params_shared_dict = {
 
     # 'subject': ['UTS02'],
     'subject': [f'UTS0{k}' for k in range(1, 4)],
-    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul24_2025_agentic_test'],
+    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/aug1_agentic'],
     # 'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
 
     # 16 is good for 8B model with 45 GB
@@ -27,7 +27,7 @@ params_shared_dict = {
     # 256 works but is slower for 8B model with 4x45 GB
     'qa_batch_size': [64], 
     'num_agent_epochs': [10],
-    # 'agent_checkpoint': ['o4-mini'],
+    'agent_checkpoint': ['o4-mini', 'gpt-4o'],
 }
 
 params_coupled_dict = {}
@@ -44,8 +44,10 @@ amlt_kwargs = {
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
     # 'sku': 'G1-A100',
     'sku': 'G2-A100',
+    # 'sku': '192G1-MI300X',
     # 'target___name': 'msrresrchvc',
     'target___name': 'msroctovc',
+    # 'target___name': 'whitney16',
 
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
 }
