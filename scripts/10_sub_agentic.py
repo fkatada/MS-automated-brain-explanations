@@ -17,13 +17,17 @@ params_shared_dict = {
     'qa_embedding_model': ['meta-llama/Meta-Llama-3-8B-Instruct'],
 
 
+    # 'subject': ['UTS02'],
     'subject': [f'UTS0{k}' for k in range(1, 4)],
     'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/jul24_2025_agentic_test'],
+    # 'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
 
     # 16 is good for 8B model with 45 GB
     # 64 is good for 8B model with 2x45 GB
     # 256 works but is slower for 8B model with 4x45 GB
     'qa_batch_size': [64], 
+    'num_agent_epochs': [10],
+    # 'agent_checkpoint': ['o4-mini'],
 }
 
 params_coupled_dict = {}

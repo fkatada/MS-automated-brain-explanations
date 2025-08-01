@@ -51,7 +51,7 @@ def evaluate_pc_model_on_each_voxel(
     corrs[np.isnan(corrs)] = 0
     return corrs
 
-def explained_variance_per_feature(X, y, w, intercept=0.0, method="lofo"):
+def explained_variance_per_feature_single_output(X, y, w, intercept=0.0, method="lofo"):
     """
     Compute per‑feature explained variance for an already‑fit Ridge (or any linear) model.
     
@@ -75,20 +75,13 @@ def explained_variance_per_feature(X, y, w, intercept=0.0, method="lofo"):
     -------
     contrib : (n_features,) ndarray
         Explained‑variance contribution for each feature.
-    """
-    X = X
-    y = y.ravel()
-    w = w.ravel()
-    
+    """   
     var_y = np.var(y, ddof=0)
-    if var_y == 0:
-        raise ValueError("y has zero variance.")
-    
-    # Common helper: full‑model predictions & R²
-    y_hat_full = intercept + X @ w
-    r2_full = 1 - np.var(y - y_hat_full, ddof=0) / var_y
     
     if method == "lofo":
+        # Common helper: full‑model predictions & R²
+        y_hat_full = intercept + X @ w
+        r2_full = 1 - np.var(y - y_hat_full, ddof=0) / var_y
         contrib = np.empty_like(w, dtype=float)
         for j in range(len(w)):
             y_hat_minus_j = y_hat_full - X[:, j] * w[j]
@@ -97,7 +90,7 @@ def explained_variance_per_feature(X, y, w, intercept=0.0, method="lofo"):
         return contrib
     
     if method == "variance":
-        # Ensure X columns are centred; otherwise centre them here.
+        # Ensure X columns are centered; otherwise center them here.
         var_hat_j = np.var(X * w, axis=0, ddof=0)      # element‑wise product
         return var_hat_j / var_y
     
@@ -135,15 +128,37 @@ def explained_var_over_targets_and_delays(args, stim_train_delayed, resp, model_
     n_targets = len(vox_idxs)
 
     # setup pred for each target
-    var_explained = np.zeros((n_targets, n_weights))
-    for i, i_single_vox in enumerate(tqdm(vox_idxs)):
-        y_single_vox = resp[:, i_single_vox]
+    weights = model_params_to_save['weights']
+
+    # slower version of the below computation
+    # var_explained = np.zeros((n_targets, n_weights))
+    # for i, i_single_vox in enumerate(tqdm(vox_idxs)):
+        # y_single_vox = resp[:, i_single_vox]
         
         # Covariance of each feature's contribution with total prediction
-        w_single_vox = model_params_to_save['weights'][:, i_single_vox]
-        var_explained[i] = explained_variance_per_feature(
-            stim_train_delayed, y_single_vox, w_single_vox, method='covariance',
-        )
+        # w_single_vox = weights[:, i_single_vox]
+        # var_explained[i] = explained_variance_per_feature_single_output(
+        #     stim_train_delayed, y_single_vox.ravel(), w_single_vox.ravel(), method='covariance',
+        # )
+
+
+    # Center responses
+    resp_centered = resp - resp.mean(axis=0)  # (n_samples, n_voxels)
+    var_y = np.var(resp, axis=0, ddof=0)      # (n_voxels,)
+
+    # Compute covariances: Cov(X_j, y) = mean(X_j * y)
+    cov = stim_train_delayed.T @ resp_centered / stim_train_delayed.shape[0]  # (n_weights, n_voxels)
+
+    # Select only desired voxels
+    cov_selected = cov[:, vox_idxs]              # (n_weights, len(vox_idxs))
+    weights_selected = weights[:, vox_idxs]      # (n_weights, len(vox_idxs))
+    var_y_selected = var_y[vox_idxs]             # (len(vox_idxs),)
+
+    # Compute variance explained
+    var_explained = (weights_selected * cov_selected) / var_y_selected  # broadcasting over (n_weights, len(vox_idxs))
+    var_explained = var_explained.T  # shape: (len(vox_idxs), n_weights)
+
+
         
     # average over delays
     var_explained = var_explained.reshape(n_targets, args.ndelays, n_questions)
@@ -207,3 +222,16 @@ def add_summary_stats(r, verbose=True):
                     f"mean top5 percentile {key}: {r[key + '_mean_top5_percentile']:.4f}")
 
     return r
+
+if __name__ == "__main__":
+    import joblib
+    args, stim_train_delayed, resp, model_params_to_save = joblib.load(
+        '/home/chansingh/automated-brain-explanations/test.joblib')
+    # time the function
+    import time
+    start_time = time.time()
+    result = explained_var_over_targets_and_delays(
+        args, stim_train_delayed, resp, model_params_to_save
+    )
+    print('result', result)
+    print('elapsed time', time.time() - start_time)

@@ -93,8 +93,8 @@ args_list = submit_utils.get_args_list(
 script_name = join(repo_dir, 'experiments', '02_fit_encoding.py')
 amlt_kwargs = {
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
-    'sku': '8C7',
-    # 'sku': '8C15',
+    # 'sku': '8C7',
+    'sku': '8C15',
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
     'target___name': 'msrresrchvc',
 }

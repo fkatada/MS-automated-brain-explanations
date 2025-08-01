@@ -279,10 +279,10 @@ def run_pipeline(args, r):
 
     # evaluate per voxel
     if args.pc_components > 0:
-        resp_test = response_utils.load_response_wrapper(
+        resp_test_voxel = response_utils.load_response_wrapper(
             args, story_names_test, args.subject)
         r['corrs_test'] = evaluate_pc_model_on_each_voxel(
-            args, stim_test_delayed, resp_test,
+            args, stim_test_delayed, resp_test_voxel,
             model_params_to_save, pca, scaler_test, args.predict_subset)
         r['corrs_tune_pc_mean_weighted_by_explained_var'] = np.sum(
             pca.explained_variance_ratio_[:args.pc_components] * r['corrs_tune_pc'])
@@ -293,6 +293,7 @@ def run_pipeline(args, r):
             resp_train_voxel = response_utils.load_response_wrapper(
                 args, story_names_train, args.subject)
             r['feature_importances_var_explained'] = explained_var_over_targets_and_delays(
+                
                 args, stim_train_delayed, resp_train_voxel, model_params_to_save)
             r['feature_importances_var_explained_norm'] = r['feature_importances_var_explained'] / \
                 np.sum(np.abs(r['feature_importances_var_explained']))
