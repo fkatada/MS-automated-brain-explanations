@@ -386,28 +386,27 @@ if __name__ == "__main__":
         lm = imodelsx.llm.get_llm(
             args.agent_checkpoint,
             CACHE_DIR=expanduser('~/.CACHE_LLM/neuro_agent'))
+
+        # first time running agent, initialize questions
         if isinstance(r, defaultdict):
-            r_epoch = r
+            r_epoch = deepcopy(r)
             r_epoch['epoch'] = 0
             r = []
+            questions_list_init = neuro.agent.brainstorm_init_questions(lm, args)
+            args.qa_questions_version = questions_list_init
+            r_epoch['questions_list'] = questions_list_init
         elif isinstance(r, list):
             r_epoch = r[-1]
+            args.qa_questions_version = r_epoch['questions_list']
+
         while r_epoch['epoch'] < args.num_agent_epochs:
 
-            logging.info(f"Running agent epoch {r_epoch['epoch'] + 1}/{args.num_agent_epochs}")
-            if r_epoch['epoch'] == 0:
-                args.qa_questions_version = neuro.agent.brainstorm_init_questions(lm, args)
-
-            print('questions_list', '\n'.join(args.qa_questions_version))
-
-            r_epoch['questions_list'] = args.qa_questions_version
+            # run with questions
+            logging.info(f"Running agent epoch {r_epoch['epoch'] + 1}/{args.num_agent_epochs}")                        
+            logging.info('questions_list '  + '\n'.join(r_epoch['questions_list']))
             r_epoch, model_params_to_save = run_pipeline(args, r_epoch)
 
-            args.qa_questions_version = neuro.agent.update_questions(lm, args, args.qa_questions_version, r_epoch)
-
             # save results
-            qs_sort_idx = np.argsort(np.array(r_epoch['feature_importances_var_explained']))[::-1]
-            
             os.makedirs(save_dir_unique, exist_ok=True)
             r.append(deepcopy(r_epoch))
             joblib.dump(r, join(save_dir_unique, "results.pkl"))
@@ -417,5 +416,9 @@ if __name__ == "__main__":
             print(
                 f"Succesfully completed epoch {r_epoch['epoch'] + 1}/{args.num_agent_epochs} in {(time.time() - t0)/60:0.1f} minutes, saved to {save_dir_unique}")
 
+            # update questions for the next epoch
+            questions_list_revised = neuro.agent.update_questions(lm, args, args.qa_questions_version, r_epoch)
+            args.qa_questions_version = questions_list_revised
+            r_epoch['questions_list'] = questions_list_revised
             r_epoch['epoch'] += 1
 

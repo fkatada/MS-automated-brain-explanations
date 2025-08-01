@@ -5,7 +5,7 @@
 description: automated-brain-explanations
 environment:
   image: amlt-sing/acpt-torch2.7.0-py3.10-cuda12.6-ubuntu22.04
-  # image: amlt-sing/acpt-rocm6.1_ubuntu20.04_py3.9_pytorch2.1.2 # for amd gpus
+  # image: amlt-sing/acpt-rocm6.2_ubuntu22.04_py3.10_pytorch2.5.1
   setup:
     # - pip install -r requirements.txt --user
     # - git clone https://github.com/csinva/imodelsX.git

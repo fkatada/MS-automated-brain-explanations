@@ -18,14 +18,16 @@ params_shared_dict = {
 
 
     # 'subject': ['UTS02'],
+    'seed': [1, 2],
     'subject': [f'UTS0{k}' for k in range(1, 4)],
     'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/aug1_agentic'],
     # 'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
 
-    # 16 is good for 8B model with 45 GB
-    # 64 is good for 8B model with 2x45 GB
-    # 256 works but is slower for 8B model with 4x45 GB
+    # 8B model: 16 for 1x45 GB, 64 for 2x45 GB, 256 for 4x45 GB (but is slower)
     'qa_batch_size': [64], 
+    # 'qa_batch_size': [128], 
+
+    
     'num_agent_epochs': [10],
     'agent_checkpoint': ['o4-mini', 'gpt-4o'],
 }
@@ -43,10 +45,12 @@ amlt_kwargs = {
     # change this to run a cpu job
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
     # 'sku': 'G1-A100',
-    'sku': 'G2-A100',
-    # 'sku': '192G1-MI300X',
+    'sku': 'G2-A100',    
     # 'target___name': 'msrresrchvc',
     'target___name': 'msroctovc',
+
+    # 'sku': '192G1-MI300X',
+    # 'environment___image': 'amlt-sing/acpt-rocm6.2_ubuntu22.04_py3.10_pytorch2.5.1',
     # 'target___name': 'whitney16',
 
     'mnt_rename': ('/home/chansingh/mntv1', '/mntv1'),
