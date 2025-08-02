@@ -20,7 +20,7 @@ params_shared_dict = {
     # 'subject': ['UTS02'],
     'seed': [1, 2],
     'subject': [f'UTS0{k}' for k in range(1, 4)],
-    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/aug1_agentic'],
+    'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/aug2_agentic'],
     # 'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
 
     # 8B model: 16 for 1x45 GB, 64 for 2x45 GB, 256 for 4x45 GB (but is slower)
@@ -29,7 +29,7 @@ params_shared_dict = {
 
     
     'num_agent_epochs': [10],
-    'agent_checkpoint': ['o4-mini', 'gpt-4o'],
+    'agent_checkpoint': ['o4-mini', 'gpt-4.1'],
 }
 
 params_coupled_dict = {}

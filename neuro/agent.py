@@ -8,7 +8,25 @@ from typing import List
 import joblib
 import numpy as np
 from tqdm import tqdm
+import time
+import functools
 
+def retry(max_attempts=3, delay=1, exceptions=(Exception,)):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        raise
+                    logging.info(f"Attempt {attempts} failed with error: {e}. Retrying in {delay} seconds...")
+                    time.sleep(delay)
+        return wrapper
+    return decorator
 
 
 def _extract_python_list_from_str(questions_list_str: str) -> List[str]:
@@ -16,7 +34,12 @@ def _extract_python_list_from_str(questions_list_str: str) -> List[str]:
     start = questions_list_str.find('[')
     end = questions_list_str.rfind(']') + 1
     logging.info(f"Extracting Python list from string: {questions_list_str[start:end]}")
+    # try:
     return ast.literal_eval(questions_list_str[start:end])
+    # except (ValueError, SyntaxError) as e:
+        # logging.error(f"Error extracting Python list: {e}")
+        # logging.error(f"Let's try reformatting quotes in the input")
+        
 
 def brainstorm_init_questions(lm, args) -> List[str]:
     PROMPT = f"""
@@ -26,7 +49,7 @@ You are a scientific agent tasked with generating useful questions for linearly 
 Brainstorm some questions that could be useful.
 Return a python list of strings and nothing else.
 Each question must start with "Does the input" and end with "?".
-Example: ['Does the input mention a location?', 'Does the input mention time?', 'Does the input contain a proper noun?']
+Example: ["Does the input mention a location?", "Does the input mention time?", "Does the input contain a proper noun?"]
 """.strip()
     questions_list_str = lm(PROMPT, max_completion_tokens=None, temperature=0) #, max_completion_tokens=1000, temperature=0)
     questions_list = _extract_python_list_from_str(questions_list_str)
@@ -50,6 +73,7 @@ def remove_invalid_questions(questions_list: List[str]) -> List[str]:
                 logging.info(f"\tRemoved question: {q}")
     return questions_list_revised
 
+@retry(max_attempts=5, delay=2)
 def update_questions(lm, args, questions_list: List[str], r) -> List[str]:
     questions_arr = np.array(questions_list)
     qs_sort_idx = np.argsort(np.array(r['feature_importances_var_explained']))[::-1]
@@ -94,14 +118,14 @@ Here are the {args.topk_agent_errors} text examples that are most poorly predict
 {_format_str_list_as_bullet_point_str(top_error_ngrams)}
 
 # Final instructions
-Extend and revise the original list of questions with more questions that could be useful.
+Extend and revise the original list of questions with several more questions that could be useful.
 Merge questions that seem too similar.
 Add new questions that capture potentially missing aspects.
 Do not needlessly reword existing questions.
 Output at least as many questions as there are in the input list, likely exactly repeating at least some of the questions.
 Return a python list of strings and nothing else.
-Each question must start with "Does the input" and end with "?".
-Example output: ['Does the input mention a location?', 'Does the input mention time?', 'Does the input contain a proper noun?']
+Each question must start with "Does the input" and end with "?". It is very important that every question starts with "Does the input".
+Example output: ["Does the input mention a location?", "Does the input mention time?", "Does the input contain a proper noun?"]
 """.strip()
     questions_list_str = lm(PROMPT, temperature=0, max_completion_tokens=None)
     questions_list = _extract_python_list_from_str(questions_list_str)

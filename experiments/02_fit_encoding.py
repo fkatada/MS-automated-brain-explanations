@@ -125,7 +125,7 @@ def add_main_args(parser):
                         help='If passed, only use this question index for QA features')
 
     # agent features
-    parser.add_argument("--agent_checkpoint", type=str, default='gpt-4o', choices=['gpt-4o', 'o4-mini'],
+    parser.add_argument("--agent_checkpoint", type=str, default='gpt-4o', choices=['gpt-4o', 'o4-mini', 'gpt-4.1'],
                         help='Checkpoint to use for agent (if feature_space is qa_agent)')
     parser.add_argument("--num_agent_epochs", type=int, default=5,
                         help='Number of epochs to train the agent for (if feature_space is qa_agent)')
@@ -385,7 +385,8 @@ if __name__ == "__main__":
     elif args.feature_space == 'qa_agent':
         lm = imodelsx.llm.get_llm(
             args.agent_checkpoint,
-            CACHE_DIR=expanduser('~/.CACHE_LLM/neuro_agent'))
+            CACHE_DIR=neuro.config.CACHE_OPENAI_AGENT_DIR,
+        )
 
         # first time running agent, initialize questions
         if isinstance(r, defaultdict):
