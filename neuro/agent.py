@@ -52,7 +52,7 @@ Each question should be fairly short and not contain many examples.
 Each question must start with "Does the input" and end with "?".
 Example: ["Does the input mention a location?", "Does the input mention time?", "Does the input contain a proper noun?"]
 """.strip()
-    questions_list_str = lm(PROMPT, max_completion_tokens=None, temperature=0) #, max_completion_tokens=1000, temperature=0)
+    questions_list_str = lm(PROMPT, max_completion_tokens=None, temperature=0, seed=args.seed) #, max_completion_tokens=1000, temperature=0)
     questions_list = _extract_python_list_from_str(questions_list_str)
     questions_list = remove_invalid_questions(questions_list)
     return questions_list
@@ -129,7 +129,7 @@ Each question should be fairly short and not contain many examples.
 Each question must start with "Does the input" and end with "?". It is very important that every question starts with "Does the input".
 Example output: ["Does the input mention a location?", "Does the input mention time?", "Does the input contain a proper noun?"]
 """.strip()
-    questions_list_str = lm(PROMPT, temperature=0, max_completion_tokens=None)
+    questions_list_str = lm(PROMPT, temperature=0, max_completion_tokens=None, seed=args.seed)
     questions_list = _extract_python_list_from_str(questions_list_str)
     logging.info(f"Updated questions list: {questions_list}")
     # assert all(q.startswith('Does the input') and q.endswith('?') for q in questions_list), \

@@ -18,7 +18,7 @@ params_shared_dict = {
 
 
     # 'subject': ['UTS02'],
-    'seed': [1],
+    'seed': [1, 2],
     'subject': [f'UTS0{k}' for k in range(1, 4)],
     'save_dir': ['/home/chansingh/mntv1/deep-fMRI/encoding/aug3_agentic'],
     # 'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
