@@ -267,8 +267,6 @@ def generate_hypotheses(
     else:
         X = embeddings
     
-    if classification is None: # Heuristic check for whether this is a classification task
-        classification = np.all(np.isin(np.random.choice(labels, size=1000, replace=True), [0, 1]))
     
     print(f"Embeddings shape: {embeddings.shape}")
 

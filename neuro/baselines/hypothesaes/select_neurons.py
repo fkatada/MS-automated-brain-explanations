@@ -137,6 +137,51 @@ def select_neurons_correlation(
     
     return sorted_indices.tolist(), selected_correlations.tolist()
 
+def select_neurons_correlation_multi_target(
+    activations: np.ndarray,
+    target: np.ndarray,
+    n_select: int,
+    **kwargs
+) -> Tuple[List[int], List[float]]:
+    """
+    Select neurons with highest average correlation across multiple targets.
+    
+    Args:
+        activations: Neuron activation matrix (n_samples, n_neurons)
+        target: Target matrix (n_samples, n_targets)
+        n_select: Number of neurons to select
+        abs_correlation: Whether to use absolute correlation values (default: True)
+    
+    Returns:
+        Indices of selected neurons and their average correlations across targets.
+    """
+    abs_correlation = kwargs.get("abs_correlation", True)
+    
+    n_neurons = activations.shape[1]
+    n_targets = target.shape[1]
+    
+    # Compute correlation for each neuron with each target
+    correlations = np.zeros((n_neurons, n_targets))
+    for i in range(n_neurons):
+        for j in range(n_targets):
+            r, _ = pearsonr(activations[:, i], target[:, j])
+            correlations[i, j] = r
+
+    # Average over targets
+    avg_corr = correlations.mean(axis=1)
+
+    # Sort by absolute or raw average correlation
+    if abs_correlation:
+        sort_metric = np.abs(avg_corr)
+    else:
+        sort_metric = avg_corr
+
+    sorted_indices = np.argsort(-sort_metric)[:n_select]
+    selected_avg_corr = avg_corr[sorted_indices]
+    
+    return sorted_indices.tolist(), selected_avg_corr.tolist()
+
+
 def select_neurons_separation_score(
     activations: np.ndarray,
     target: np.ndarray,
@@ -250,6 +295,13 @@ def select_neurons(
         )
     elif method == "correlation":
         return select_neurons_correlation(
+            activations=activations,
+            target=target,
+            n_select=n_select,
+            **kwargs
+        )
+    elif method == "correlation_multi_target":
+        return select_neurons_correlation_multi_target(
             activations=activations,
             target=target,
             n_select=n_select,
