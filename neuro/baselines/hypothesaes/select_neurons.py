@@ -6,6 +6,7 @@ from typing import List, Optional, Callable, Tuple
 from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import pearsonr
+import tqdm
 
 def select_neurons_lasso(
     activations: np.ndarray,
@@ -150,36 +151,28 @@ def select_neurons_correlation_multi_target(
         activations: Neuron activation matrix (n_samples, n_neurons)
         target: Target matrix (n_samples, n_targets)
         n_select: Number of neurons to select
-        abs_correlation: Whether to use absolute correlation values (default: True)
     
     Returns:
         Indices of selected neurons and their average correlations across targets.
     """
-    abs_correlation = kwargs.get("abs_correlation", True)
     
     n_neurons = activations.shape[1]
     n_targets = target.shape[1]
     
     # Compute correlation for each neuron with each target
     correlations = np.zeros((n_neurons, n_targets))
-    for i in range(n_neurons):
+    for i in tqdm(range(n_neurons)):
         for j in range(n_targets):
             r, _ = pearsonr(activations[:, i], target[:, j])
             correlations[i, j] = r
 
     # Average over targets
-    avg_corr = correlations.mean(axis=1)
+    avg_abs_corr = np.abs(correlations).mean(axis=1)
 
-    # Sort by absolute or raw average correlation
-    if abs_correlation:
-        sort_metric = np.abs(avg_corr)
-    else:
-        sort_metric = avg_corr
-
-    sorted_indices = np.argsort(-sort_metric)[:n_select]
-    selected_avg_corr = avg_corr[sorted_indices]
+    sorted_indices = np.argsort(-avg_abs_corr)[:n_select]
+    selected_avg_abs_corr = avg_abs_corr[sorted_indices]
     
-    return sorted_indices.tolist(), selected_avg_corr.tolist()
+    return sorted_indices.tolist(), selected_avg_abs_corr.tolist()
 
 
 def select_neurons_separation_score(

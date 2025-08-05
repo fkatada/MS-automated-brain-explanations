@@ -36,6 +36,8 @@ CACHE_OPENAI_AGENT_DIR = join(FMRI_DIR_BLOB, 'qa', 'cache_openai_agent')
 EM_DATA_DIR = join(FMRI_DIR_BLOB, 'data', 'eng1000')
 NLP_UTILS_DIR = join(FMRI_DIR_BLOB, 'nlp_utils')
 
+DECODING_DIR = join(REPO_DIR, 'data', 'decoding')
+
 
 ############## ECOG ###################
 ECOG_DIR = join(MNT_DIR, 'ecog')
