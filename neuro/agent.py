@@ -41,6 +41,51 @@ def _extract_python_list_from_str(questions_list_str: str) -> List[str]:
         # logging.error(f"Let's try reformatting quotes in the input")
         
 
+def revise_invalid_questions_by_rewording(questions_list: List[str], lm) -> List[str]:
+    """Reformat questions to ensure they start with 'Does the input' and end with '?'."""
+    questions_list_proper = [
+        q for q in questions_list
+        if q.startswith('Does the input') and q.endswith('?')
+    ]
+
+    # fix the improper questions by rewording them
+    questions_list_improper = [
+        q for q in questions_list if not q in questions_list_proper
+    ]
+    PROMPT_REWORD = f"""
+Rewrite every element in this list to be a question starting with "Does the input" and ending with a question mark.
+
+- {'\n- '.join(questions_list_improper)}
+
+Make as few changes as possible to the original text.
+Return only a python list and nothing else.""".strip()
+    questions_list_improper_revised_str = lm(PROMPT_REWORD, max_completion_tokens=None, temperature=0)
+    try:
+        questions_list_improper_revised = _extract_python_list_from_str(questions_list_improper_revised_str)
+    except Exception as e:
+        logging.error(f"Error extracting Python list from string: {e}")
+        logging.error(f"Input string was: {questions_list_improper_revised_str}")
+        questions_list_improper_revised = []
+    questions_list_proper_revised = [
+        q for q in questions_list_improper_revised
+        if q.startswith('Does the input') and q.endswith('?')
+    ]
+    return list(set(questions_list_proper + questions_list_proper_revised))
+
+
+def revise_invalid_questions_by_removing(questions_list: List[str]) -> List[str]:
+    """Ensure all questions start with 'Does the input' and end with '?'."""
+    questions_list_revised = [
+        q for q in questions_list
+        if q.startswith('Does the input') and q.endswith('?')
+    ]
+    if len(questions_list_revised) < len(questions_list):
+        logging.info("Some questions were removed because they did not start with 'Does the input' and end with '?'")
+        for q in questions_list:
+            if not (q.startswith('Does the input') and q.endswith('?')):
+                logging.info(f"\tRemoved question: {q}")
+    return questions_list_revised
+
 def brainstorm_init_questions(lm, args) -> List[str]:
     PROMPT = f"""
 You are a scientific agent tasked with generating useful questions for linearly predicting fMRI responses to natural language stimuli.
@@ -54,25 +99,13 @@ Example: ["Does the input mention a location?", "Does the input mention time?", 
 """.strip()
     questions_list_str = lm(PROMPT, max_completion_tokens=None, temperature=0, seed=args.seed) #, max_completion_tokens=1000, temperature=0)
     questions_list = _extract_python_list_from_str(questions_list_str)
-    questions_list = remove_invalid_questions(questions_list)
+    # questions_list = revise_invalid_questions_by_removing(questions_list)
+    questions_list = revise_invalid_questions_by_rewording(questions_list, lm)
     return questions_list
 
 def _format_str_list_as_bullet_point_str(questions_list: List[str]) -> str:
     """Format a list of strings as bullet points."""
     return '\n'.join(f"- {question}" for question in questions_list)
-
-def remove_invalid_questions(questions_list: List[str]) -> List[str]:
-    """Ensure all questions start with 'Does the input' and end with '?'."""
-    questions_list_revised = [
-        q for q in questions_list
-        if q.startswith('Does the input') and q.endswith('?')
-    ]
-    if len(questions_list_revised) < len(questions_list):
-        logging.info("Some questions were removed because they did not start with 'Does the input' and end with '?'")
-        for q in questions_list:
-            if not (q.startswith('Does the input') and q.endswith('?')):
-                logging.info(f"\tRemoved question: {q}")
-    return questions_list_revised
 
 @retry(max_attempts=5, delay=2)
 def update_questions(lm, args, questions_list: List[str], r) -> List[str]:
@@ -134,7 +167,8 @@ Example output: ["Does the input mention a location?", "Does the input mention t
     logging.info(f"Updated questions list: {questions_list}")
     # assert all(q.startswith('Does the input') and q.endswith('?') for q in questions_list), \
         # "All questions must start with 'Does the input' and end with '?'"
-    questions_list = remove_invalid_questions(questions_list)
+    # questions_list = revise_invalid_questions_by_removing(questions_list)
+    questions_list = revise_invalid_questions_by_rewording(questions_list, lm)
     assert len(questions_list) >= len(questions_arr), \
         f"Updated questions list must have at least as many questions as the original list. Original length: {len(questions_arr)}, updated length: {len(questions_list)}"
     return questions_list

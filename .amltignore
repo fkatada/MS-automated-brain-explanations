@@ -21,3 +21,4 @@ data/d3
 data/**.txt
 scripts/**.py
 docs
+data/demo_data

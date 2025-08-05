@@ -13,9 +13,9 @@ from .utils import load_prompt, truncate_text
 from .annotate import annotate, CACHE_DIR
 
 DEFAULT_TASK_SPECIFIC_INSTRUCTIONS = """An example feature could be:
-- "uses multiple adjectives to describe colors"
-- "describes a patient experiencing seizures or epilepsy"
-- "contains multiple single-digit numbers\""""
+- "The input uses multiple adjectives to describe colors"
+- "The input describes a patient experiencing seizures or epilepsy"
+- "The input contains multiple single-digit numbers\""""
 
 DEFAULT_MAX_INTERPRETATION_TOKENS_THINKING = 8192
 
