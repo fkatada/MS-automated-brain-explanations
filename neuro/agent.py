@@ -70,7 +70,16 @@ Return only a python list and nothing else.""".strip()
         q for q in questions_list_improper_revised
         if q.startswith('Does the input') and q.endswith('?')
     ]
-    return list(set(questions_list_proper + questions_list_proper_revised))
+
+    # remove duplicates while preserving order
+    seen = set()
+    questions_list_final = []
+    for q in questions_list_proper + questions_list_proper_revised:
+        if q not in seen:
+            seen.add(q)
+            questions_list_final.append(q)
+    return questions_list_final
+
 
 
 def revise_invalid_questions_by_removing(questions_list: List[str]) -> List[str]:

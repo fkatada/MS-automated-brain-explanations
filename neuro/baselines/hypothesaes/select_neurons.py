@@ -6,7 +6,7 @@ from typing import List, Optional, Callable, Tuple
 from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import pearsonr
-import tqdm
+from tqdm import tqdm
 
 def select_neurons_lasso(
     activations: np.ndarray,
@@ -156,15 +156,18 @@ def select_neurons_correlation_multi_target(
         Indices of selected neurons and their average correlations across targets.
     """
     
-    n_neurons = activations.shape[1]
-    n_targets = target.shape[1]
-    
     # Compute correlation for each neuron with each target
-    correlations = np.zeros((n_neurons, n_targets))
-    for i in tqdm(range(n_neurons)):
-        for j in range(n_targets):
-            r, _ = pearsonr(activations[:, i], target[:, j])
-            correlations[i, j] = r
+    # Center the data (zero mean)
+    a_centered = activations - activations.mean(axis=0, keepdims=True)
+    t_centered = target - target.mean(axis=0, keepdims=True)
+
+    # Normalize by standard deviation
+    a_std = a_centered.std(axis=0, keepdims=True)
+    t_std = t_centered.std(axis=0, keepdims=True)
+
+    # Compute correlation matrix: (n_neurons, n_targets)
+    correlations = (a_centered.T @ t_centered) / (activations.shape[0] * a_std.T @ t_std)
+
 
     # Average over targets
     avg_abs_corr = np.abs(correlations).mean(axis=1)

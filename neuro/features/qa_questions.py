@@ -1,8 +1,10 @@
 import re
 from os.path import dirname
 
+import joblib
 import numpy as np
-
+from os.path import join
+import neuro.config
 from neuro.features.questions.gpt4 import QS_35_STABLE, QS_HYPOTHESES
 from neuro.features.questions.merge_v3_boostexamples import DICT_MERGE_V3_BOOSTEXAMPLES
 from neuro.features.questions.qa_questions_base import *
@@ -40,7 +42,11 @@ def _rewrite_to_focus_on_end(question, suffix='last'):
 
 
 def get_kwargs_list_for_version_str(version_str: str):
-    if '?' in version_str or 'neurosynth' in version_str or version_str == 'qs_35':
+    '''This function is just for logic with dealing with merging the manually specified versions that depend on each other
+    '''
+    if version_str not in ['v1', 'v2', 'v3', 'v3_boostexamples',
+                                 'v4_boostexamples', 'v4', 'v5', 'v3_boostexamples_merged']:
+        # if '?' in version_str or 'neurosynth' in version_str or version_str == 'qs_35':
         return [{'qa_questions_version': version_str}]
     # version str contains version and suffix
     # v3 -> v1, v2, v3
@@ -132,12 +138,15 @@ def get_questions(version='v1', suffix=None, full=False):
         ans_list = [ANS_BOOST_6, ANS_BOOST_6_2]
         remove_list = ['v1', 'v2', 'v3', 'v4', 'v5']
 
-    # neurosynth
+    # custom qs
     elif version == 'v1neurosynth':
         qs = QS_HYPOTHESES
         remove_list = []
     elif version == 'qs_35':
         qs = QS_35_STABLE
+        remove_list = []
+    elif version == 'hypothesae':
+        qs = joblib.load(join(neuro.config.HYPOTHESAES_RESULTS_DIR, 'interpretations', "results_questions.pkl"))['questions_processed'].values.tolist()
         remove_list = []
 
     # special cases
@@ -147,7 +156,7 @@ def get_questions(version='v1', suffix=None, full=False):
     elif version == 'all':
         return get_questions(version='v6', suffix=suffix, full=True)
 
-    if 'neurosynth' not in version and not version == 'qs_35':
+    if 'neurosynth' not in version and not version == 'qs_35' and not version == 'hypothesae':
         qs = sum([_split_bulleted_str(ans, remove_parentheticals)
                   for ans in ans_list], [])
 
@@ -157,10 +166,15 @@ def get_questions(version='v1', suffix=None, full=False):
     qs_remove = sum([get_questions(version=v, suffix=suffix)
                      for v in remove_list], [])
     qs_added = sorted(list(set(qs) - set(qs_remove)))
+
+
     if full:
         # be careful to always add things in the right order!!!!
-        return qs_remove + qs_added
-    return qs_added
+        qs_final = qs_remove + qs_added
+    else:
+        qs_final = qs_added
+
+    return qs_final
 
 
 def _get_merged_keep_indices_v3_boostexamples():

@@ -38,6 +38,9 @@ NLP_UTILS_DIR = join(FMRI_DIR_BLOB, 'nlp_utils')
 
 DECODING_DIR = join(REPO_DIR, 'data', 'decoding')
 
+# agent stuff
+HYPOTHESAES_RESULTS_DIR = join(FMRI_DIR_BLOB, 'qa', 'hypothesaes')
+
 
 ############## ECOG ###################
 ECOG_DIR = join(MNT_DIR, 'ecog')
