@@ -129,7 +129,7 @@ def add_main_args(parser):
                         help='''Restricts the number of questions to use (only when feature_space is qa_embedder).''')
 
     # agent features
-    parser.add_argument("--agent_checkpoint", type=str, default='gpt-4o', choices=['gpt-4o', 'o4-mini', 'gpt-4.1'],
+    parser.add_argument("--agent_checkpoint", type=str, default='gpt-4o', choices=['gpt-4o', 'o4-mini', 'gpt-4.1', 'gpt-5-chat'],
                         help='Checkpoint to use for agent (if feature_space is qa_agent)')
     parser.add_argument("--num_agent_epochs", type=int, default=5,
                         help='Number of epochs to train the agent for (if feature_space is qa_agent)')

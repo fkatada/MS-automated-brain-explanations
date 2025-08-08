@@ -52,20 +52,23 @@ def revise_invalid_questions_by_rewording(questions_list: List[str], lm) -> List
     questions_list_improper = [
         q for q in questions_list if not q in questions_list_proper
     ]
-    PROMPT_REWORD = f"""
+    questions_list_improper_revised = []
+    if len(questions_list_improper) > 0:
+        PROMPT_REWORD = f"""
 Rewrite every element in this list to be a question starting with "Does the input" and ending with a question mark.
 
 - {'\n- '.join(questions_list_improper)}
 
 Make as few changes as possible to the original text.
 Return only a python list and nothing else.""".strip()
-    questions_list_improper_revised_str = lm(PROMPT_REWORD, max_completion_tokens=None, temperature=0)
-    try:
-        questions_list_improper_revised = _extract_python_list_from_str(questions_list_improper_revised_str)
-    except Exception as e:
-        logging.error(f"Error extracting Python list from string: {e}")
-        logging.error(f"Input string was: {questions_list_improper_revised_str}")
-        questions_list_improper_revised = []
+        questions_list_improper_revised_str = lm(PROMPT_REWORD, max_completion_tokens=None, temperature=0)
+        try:
+            questions_list_improper_revised = _extract_python_list_from_str(questions_list_improper_revised_str)
+        except Exception as e:
+            logging.error(f"Error extracting Python list from string: {e}")
+            logging.error(f"Input string was: {questions_list_improper_revised_str}")
+            questions_list_improper_revised = []
+
     questions_list_proper_revised = [
         q for q in questions_list_improper_revised
         if q.startswith('Does the input') and q.endswith('?')

@@ -146,7 +146,12 @@ def quickshow(
     if fname_save is not None:
         if not os.path.dirname(fname_save) == '':
             os.makedirs(os.path.dirname(fname_save), exist_ok=True)
-        plt.savefig(fname_save)
-        plt.savefig(fname_save.replace(".pdf", ".png"),
-                    transparent=True, bbox_inches='tight')
+        if fname_save.endswith('.png'):
+            plt.savefig(fname_save.replace(".pdf", ".png"),
+                        transparent=True, bbox_inches='tight')
+        # if pdf save both
+        if fname_save.endswith('.pdf'):
+            plt.savefig(fname_save, bbox_inches='tight')
+            plt.savefig(fname_save.replace(".pdf", ".png"),
+                        transparent=True, bbox_inches='tight')
         plt.close()

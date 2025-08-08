@@ -108,7 +108,7 @@ def get_story_names_from_args(args):
         args.nboots = 5
         args.use_extract_only = 0
         args.use_huge = 1
-        story_names_train = ['sloth', 'adollshouse']
+        story_names_train = ['sloth'] #, 'adollshouse']
         story_names_test = ['fromboyhoodtofatherhood']
         # story_names_train = get_story_names(
         # args.subject, 'train', use_huge=args.use_huge)[:20]

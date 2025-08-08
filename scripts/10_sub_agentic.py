@@ -29,7 +29,8 @@ params_shared_dict = {
 
     
     'num_agent_epochs': [10],
-    'agent_checkpoint': ['o4-mini', 'gpt-4.1'],
+    # 'agent_checkpoint': ['o4-mini', 'gpt-4.1'],
+    'agent_checkpoint': ['gpt-5-chat'],
 }
 
 params_coupled_dict = {}
@@ -44,8 +45,8 @@ script_name = join(repo_dir, 'experiments', '02_fit_encoding.py')
 amlt_kwargs = {
     # change this to run a cpu job
     'amlt_file': join(repo_dir, 'scripts', 'launch.yaml'),
-    # 'sku': 'G1-A100',
-    'sku': 'G2-A100',    
+    'sku': 'G1-A100',
+    # 'sku': 'G2-A100',    
     # 'target___name': 'msrresrchvc',
     'target___name': 'msroctovc',
 

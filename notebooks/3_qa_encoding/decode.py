@@ -1,9 +1,8 @@
 import warnings
 from copy import deepcopy
-from neuro.config import repo_dir, PROCESSED_DIR, setup_freesurfer
+from neuro.config import REPO_DIR, PROCESSED_DIR, setup_freesurfer
 from neuro.analyze_helper import abbrev_question
 import matplotlib.image as mpimg
-import sasc.viz
 import dvu
 from neuro import analyze_helper
 from sklearn.linear_model import LogisticRegressionCV
@@ -27,7 +26,7 @@ import pandas as pd
 from ridge_utils.DataSequence import DataSequence
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pickle")
 dvu.set_style()
-data_dir = join(neuro.config.repo_dir, 'data', 'decoding')
+data_dir = join(neuro.config.REPO_DIR, 'data', 'decoding')
 
 
 def get_fmri_and_labs(data_dir, story_name='onapproachtopluto', train_or_test='test', subject='uts03', mask_subject=None):
