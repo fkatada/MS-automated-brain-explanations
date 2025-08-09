@@ -99,6 +99,11 @@ def add_main_args(parser):
                         Applies if feature_selection_alpha >= 0.
                         Note: needs to run feature selection with this many different seeds (slow, good to run in parallel before calling this)
                         ''')
+    parser.add_argument("--feature_selection_pc_components", type=int,
+                        default=-1,
+                        help='''Number of principal components of the response to use for feature selection, when using feature selection.
+                        If -1, uses pc_components arg above
+                        ''')
     parser.add_argument("--use_added_wordrate_feature", type=int, default=0,
                         choices=[0, 1], help='Whether to add the wordrate feature')
 

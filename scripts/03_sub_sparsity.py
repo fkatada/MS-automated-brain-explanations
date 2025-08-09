@@ -36,16 +36,18 @@ params_shared_dict = {
 
 
     # subsets for agentic single
-    # 'predict_subset': ['all', 'prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
-    # 'seed': range(1),
-    # 'feature_selection_frac': [1],
-    # 'feature_selection_max_iter': [1000],
+    'predict_subset': ['all', 'prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
+    'seed': range(1),
+    'feature_selection_frac': [1],
+    'feature_selection_max_iter': [1000],
+    'feature_selection_pc_components': [10],
 
     # subsets for agentic stab selection (all was already run originally, but with higher feature_selection_frac)
-    'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
-    'seed': range(5),
-    'feature_selection_frac': [0.5],
-    'feature_selection_max_iter': [1000],
+    # 'predict_subset': ['prefrontal', 'occipital', 'sensorimotor', 'cingulate', 'insula', 'parietal', 'temporal'],
+    # 'seed': range(5),
+    # 'feature_selection_frac': [0.5],
+    # 'feature_selection_max_iter': [1000],
+    # 'feature_selection_pc_components': [10],
 
 
 
@@ -100,14 +102,14 @@ amlt_kwargs = {
 }
     
 submit_utils.run_args_list(
-    args_list[1:],
+    args_list,
     script_name=script_name,
     amlt_kwargs=amlt_kwargs,
     # n_cpus=4,
-    # n_cpus=2,
+    # n_cpus=1,
     # gpu_ids=[0, 1, 2, 3],
     # actually_run=False,
     repeat_failed_jobs=True,
-    shuffle=True,
+    # shuffle=True,
     cmd_python=f'export HF_TOKEN={open(expanduser("~/.HF_TOKEN"), "r").read().strip()}; .venv/bin/python',
 )

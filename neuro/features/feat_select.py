@@ -37,7 +37,11 @@ def get_selected_coef(args, feature_selection_stability_seeds: int, seed: int,
         print('nonzero stable', coef_nonzero.sum())
         return coef_nonzero
 
-    cache_dir = join(config.FMRI_DIR_BLOB, 'qa', 'sparse_feats_shared')
+    if args.feature_selection_pc_components > 0:
+        cache_dir = join(config.FMRI_DIR_BLOB, 'qa', f'sparse_feats_shared_pc={args.feature_selection_pc_components}')
+    else:
+        cache_dir = join(config.FMRI_DIR_BLOB, 'qa', 'sparse_feats_shared')
+    
     cache_file = join(
         cache_dir,
         args.predict_subset,
@@ -54,9 +58,22 @@ def get_selected_coef(args, feature_selection_stability_seeds: int, seed: int,
         # remove delays from stim
         stim_train = stim_train_delayed[:,
                                         :stim_train_delayed.shape[1] // args.ndelays]
+        
         # get special resps by concatenating across subjects
         resp_train_shared = response_utils.get_resps_full(
             args, 'shared', story_names_train, story_names_test)
+        
+
+        if args.feature_selection_pc_components > 0:
+            # take the first args.feature_selection_pc_components of each subject's responses
+            num_pcs_per_subj = resp_train_shared.shape[1] // 3
+            resp_train_shared = np.concatenate([
+                resp_train_shared[:, 
+                                  (i * num_pcs_per_subj):
+                                  (i * num_pcs_per_subj) + args.feature_selection_pc_components]
+                for i in range(3)
+            ], axis=1)
+            print('resp_train_shared shape after selecting feature_selection_pc_components:', resp_train_shared.shape)
 
         # randomly subsample based on seed
         if 0 < args.feature_selection_frac < 1:
